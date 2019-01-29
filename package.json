@@ -1,0 +1,36 @@
+{
+  "name": "bach",
+  "version": "1.0.0",
+  "description": "Orchestrate a vendor agnostic cloud.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/conorturner/bach.git"
+  },
+  "keywords": [
+    "orchestrate",
+    "cloud"
+  ],
+  "author": "Conor Turner",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/conorturner/bach/issues"
+  },
+  "homepage": "https://github.com/conorturner/bach#readme",
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "commander": "^2.19.0",
+    "figlet": "^1.2.1",
+    "inquirer": "^6.2.1",
+    "shelljs": "^0.8.3"
+  },
+  "bin": {
+    "bach": "./index.js"
+  },
+  "devDependencies": {
+    "jest": "^24.0.0"
+  }
+}

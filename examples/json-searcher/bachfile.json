@@ -1,0 +1,26 @@
+{
+  "logical-name": "json-searcher",
+  "type": "mapper",
+  "interruptible": true,
+  "runtime": "nodejs10",
+  "tile": {
+    "min": 4,
+    "max": 10,
+    "delimiter": "\n"
+  },
+  "hardware": {
+    "cpu": {
+      "min": 1,
+      "max": null
+    },
+    "memory": {
+      "min": 128,
+      "max": null
+    },
+    "disk": {
+      "min": "1g"
+    },
+    "graphics": null,
+    "network": null
+  }
+}

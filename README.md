@@ -110,13 +110,17 @@ Orchestrate a vendor agnostic cloud.
 ## Event driven architecture
 1. `$ bach task run`
 2. Check if topics/cloud storage are created
-3. If not, create them.
+    a. If not, create them and upload dataset (if local uri)
+    b. If dataset exists in cloud check hash file(s) for freshness, if need be reupload.
+    c. create build/input/output/report storage buckets
+    d. if dataset is distributed simply stream directly from remote servers.
 4. On upload to code storage an event triggers execution of code and simultaneously triggers a execution.json file in the report folder.
     a. if abstract runtime e.g. nodejs, java, exe. Send code uri to            function and download code and execute in nodevm etc.
     b. if docker image run with sdtin as a pipe from the relevant          command line command e.g. `$ bach storage get $LOGICAL_ID`
-5. Run program and pipe outputs into output bucket which will trigger an event placing a report.json file in a report bucket.
-6. `$ bach task report`
-7. Check report.json files against execution.json file to determine the state of the system. Report as necessary.
+5. Run program and pipe outputs into output bucket which will trigger an event placing a report.json file in a report storage.
+6. If the program is interrupted it will create a interrupt.json which will trigger an event which will restart the program based on the interrupt report.
+7. `$ bach task report`
+8. Check report.json files against execution.json file to determine the state of the system. Report as necessary.
 
 ## Datasets
 
@@ -127,7 +131,7 @@ _US IRS filings_
 https://registry.opendata.aws/irs990/
 https://s3.amazonaws.com/irs-form-990/index_20xx.json
 
-_Massive wb crawl database_
+_Massive web crawl database_
 https://registry.opendata.aws/commoncrawl/
 
 _Nexrad weather satellite data_
@@ -135,4 +139,4 @@ https://docs.opendata.aws/noaa-nexrad/readme.html
 
 _Database of a subset of all 'events' that occur on this earth._ Scraped from the internet I assume.
 https://www.gdeltproject.org/#intro
-Mini 1.1gb version of the dataset http://data.gdeltproject.org/events/GDELT.MASTERREDUCEDV2.1979-2013.zip
+Smaller 1.1gb version of the dataset http://data.gdeltproject.org/events/GDELT.MASTERREDUCEDV2.1979-2013.zip
