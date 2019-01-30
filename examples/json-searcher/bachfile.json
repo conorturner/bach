@@ -2,7 +2,7 @@
   "logical-name": "json-searcher",
   "type": "mapper",
   "interruptible": true,
-  "runtime": "nodejs10",
+  "runtime": "nodejs11",
   "tile": {
     "min": 4,
     "max": 10,
