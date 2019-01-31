@@ -26,7 +26,6 @@ process.stdin.on("readable", () => {
 });
 
 process.stdin.on("end", () => {
-	console.log(Object.keys(acc).reduce((map, el) => Object.assign(map, { [el]: acc[el].length }), {}));
-	console.log("end of stream");
+	// console.log(Object.keys(acc).reduce((map, el) => Object.assign(map, { [el]: acc[el].length }), {}));
 	// process.exit(0);
 });

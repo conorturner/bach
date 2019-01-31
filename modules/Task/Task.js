@@ -29,10 +29,7 @@ class Task {
 		}
 	}
 
-	run({ path, target = "local", inputStream }) {
-		const bachfile = this.readBachfile(path);
-		if (!path) return Promise.resolve();
-
+	run({ bachfile, target = "local", inputStream }) {
 		switch (target) {
 			case "local": {
 				return this.docker.run({

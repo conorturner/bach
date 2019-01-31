@@ -5,7 +5,7 @@
   "runtime": "nodejs11",
   "data": "citylots.json.dat",
   "tile": {
-    "min": 4,
+    "min": 10,
     "max": 10,
     "delimiter": "\n"
   },
