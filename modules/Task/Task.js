@@ -1,50 +1,60 @@
-const { execSync } = require("child_process");
 const Docker = require("../Docker/Docker");
 const NodeBuilder = require("../TaskBuilders/NodeBuilder/NodeBuilder");
 
 class Task {
 
-	constructor({ shell = require("shelljs"), docker = new Docker() } = {}) {
-		this.shell = shell;
+	constructor({ docker = new Docker(), childProcess = require("child_process") } = {}) {
 		this.docker = docker;
+		this.childProcess = childProcess;
 	}
 
 	build(path) {
-		const bachfile = JSON.parse(execSync(`cat ${path}/bachfile.json`));
+		const bachfile = this.readBachfile(path);
+		if (!path) return Promise.resolve();
 
 		// Clean build folder.
-		this.shell.exec(`rm -rf ${path}/build`);
-		this.shell.exec(`mkdir ${path}/build`);
+		this.childProcess.execSync(`rm -rf ${path}/build`);
+		this.childProcess.execSync(`mkdir ${path}/build`);
 
 		switch (bachfile.runtime) {
 			case "nodejs11": {
 				const nodeBuilder = new NodeBuilder({ path });
-				nodeBuilder.build(bachfile);
-				return Promise.resolve(bachfile);
+				return nodeBuilder.build(bachfile);
 			}
 			default: {
 				console.error("unknown runtime");
+
 				break;
 			}
 		}
 	}
 
-	run({ bachfile, runtime = "local", inputStream }) {
+	run({ path, target = "local", inputStream }) {
+		const bachfile = this.readBachfile(path);
+		if (!path) return Promise.resolve();
 
-		switch (runtime) {
+		switch (target) {
 			case "local": {
-				this.docker.run({
+				return this.docker.run({
 					tag: bachfile["logical-name"],
 					env: { TILE_NUM: 5 },
 					inputStream
 				});
-
-				break;
 			}
 
 			default: {
 				throw new Error("Unknown runtime target");
 			}
+		}
+	}
+
+	readBachfile(path) {
+		try {
+			return JSON.parse(this.childProcess.execSync(`cat ${path}/bachfile.json`));
+
+		}
+		catch (e) {
+			console.error("error getting bachfile", e);
 		}
 	}
 

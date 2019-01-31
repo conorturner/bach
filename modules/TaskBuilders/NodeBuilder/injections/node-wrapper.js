@@ -5,34 +5,28 @@ process.stdin.on("readable", () => {
 	let chunk;
 
 	while ((chunk = process.stdin.read()) !== null) {
+
+		// TODO: handling tiling of data should not be done here, a stream of complete tiles should be piped directly in
 		const string = remainder + chunk.toString();
-		// console.log(string);
-		// console.log("");
-		// console.log("");
-		// console.log("");
 		const units = string.split("\n");
 		remainder = units.splice(-1, 1)[0]; // if it doesn't contain a final delimiter, keep the last chunk
 
 		units.forEach(unit => {
 			try {
-				// JSON.parse(unit)
+				// TODO: move this into a child process so that it can be monitored externally
 				func(JSON.parse(unit), acc);
 			}
 			catch (e) {
-				// JSON.parse(remainder + unit)
-				console.log("error", e);
-				// console.log(e);
+				console.error("error", e);
 			}
 		});
-		// console.log(func("line"));
-		// console.log("remainder", remainder);
 
 	}
 
 });
 
 process.stdin.on("end", () => {
-	console.log(Object.keys(acc).reduce((map, el) => Object.assign(map, {[el]: acc[el].length}) , {}));
+	console.log(Object.keys(acc).reduce((map, el) => Object.assign(map, { [el]: acc[el].length }), {}));
 	console.log("end of stream");
-	process.exit(0);
+	// process.exit(0);
 });

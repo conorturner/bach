@@ -3,6 +3,7 @@
   "type": "mapper",
   "interruptible": true,
   "runtime": "nodejs11",
+  "data": "citylots.json.dat",
   "tile": {
     "min": 4,
     "max": 10,

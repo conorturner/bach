@@ -5,6 +5,7 @@ const chalk = require("chalk");
 const figlet = require("figlet");
 const shell = require("shelljs");
 const fs = require("fs");
+const program = require("commander");
 
 const init = () => {
 	console.log(
@@ -48,6 +49,5 @@ const success = filepath => {
 	);
 };
 
-fs.readdirSync(__dirname + "/commands")
-	.map(name => require(`./commands/${name}`).parse(process.argv));
-
+fs.readdirSync(__dirname + "/commands").map(name => require(`./commands/${name}`)); // auto load command files
+program.parse(process.argv);

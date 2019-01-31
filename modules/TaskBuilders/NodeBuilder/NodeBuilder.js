@@ -11,7 +11,7 @@ class NodeBuilder extends TaskBuilder {
 		this.inject(`${__dirname}/injections/.node11.Dockerfile`, "/build/.temp.Dockerfile");
 
 		const tag = bachfile["logical-name"];
-		this.docker.build({ tag, workdir: this.path, file: "build/.temp.Dockerfile" });
+		return this.docker.build({ tag, workdir: this.path, file: "build/.temp.Dockerfile" });
 	}
 
 }

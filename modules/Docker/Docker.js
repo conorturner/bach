@@ -6,12 +6,21 @@ class Docker {
 
 	run({ tag, env, inputStream }) {
 		const envArgs = Object.keys(env).map(key => `-e ${key}=${JSON.stringify(env[key])}`).join(" ");
-		console.log(this.childProcess.execSync(`${inputStream} | docker run ${envArgs} -i ${tag}`).toString());
+		const cmd = `${inputStream} | docker run ${envArgs} -i ${tag}`;
+
+		return new Promise((resolve, reject) => {
+			this.childProcess.exec(cmd, (error, stdout, stderr) =>
+				error ? reject(error) : resolve({ stdout, stderr }));
+		});
 	}
 
 	build({ tag, file, workdir }) {
 		const cmd = `docker build -f ${workdir}/${file} -t ${tag} ${workdir}`;
-		console.log(this.childProcess.execSync(cmd).toString());
+
+		return new Promise((resolve, reject) => {
+			this.childProcess.exec(cmd, (error, stdout, stderr) =>
+				error ? reject(error) : resolve({ stdout, stderr }));
+		});
 	}
 
 }
