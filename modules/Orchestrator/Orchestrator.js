@@ -2,7 +2,6 @@
 const Task = require("../Task/Task.js");
 const LocalStorage = require("../Storage/LocalStorage/LocalStorage");
 
-
 class Orchestrator {
 
 	constructor({ task = new Task(), localStorage = new LocalStorage() } = {}) {
@@ -29,11 +28,21 @@ class Orchestrator {
 		const { tile } = bachfile;
 		const { min } = tile;
 
+
 		return this.localStorage.getTileReadStreams(dataUri, min)
-			.then(readStreams => {
-				return Promise.all(readStreams.map(readStream => {
-					return this.task.run({ bachfile, inputStream: readStream });
-				}));
+			.then(({ readStreams, fd }) => {
+				return Promise.all(readStreams.map((readStream, i) => {
+					console.time(`task ${i} - ${Math.round((readStream.end - readStream.start)/1e6)}mb`);
+
+					return this.task.run({ bachfile, inputStream: readStream })
+						.then(r => {
+							console.timeEnd(`task ${i} - ${Math.round((readStream.end - readStream.start)/1e6)}mb`);
+							return r;
+						});
+				})).then(result => {
+					this.localStorage.fs.closeSync(fd);
+					return result;
+				});
 			});
 
 		// const size = this.localStorage.getFileSize(dataUri);

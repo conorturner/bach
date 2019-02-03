@@ -3,15 +3,14 @@
   "type": "mapper",
   "interruptible": true,
   "runtime": "nodejs11",
-  "data": "citylots.json.dat",
   "tile": {
-    "min": 10,
-    "max": 10,
+    "min": 8,
+    "max": 16,
     "delimiter": "\n"
   },
   "hardware": {
     "cpu": {
-      "min": 1,
+      "min": 0.2,
       "max": null
     },
     "memory": {

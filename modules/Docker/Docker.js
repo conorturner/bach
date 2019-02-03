@@ -4,11 +4,11 @@ class Docker {
 		this.childProcess = childProcess;
 	}
 
-	run({ tag, env, inputStream }) {
+	run({ tag, env, inputStream, cpu }) {
 		const envArgs = Object.keys(env).map(key => `-e ${key}=${JSON.stringify(env[key])}`).join(" ");
 
 		return new Promise((resolve) => {
-			const args = ["run", envArgs, "-i", "--cpu-period=10000", "--cpu-quota=2500", tag];
+			const args = ["run", envArgs, "-i", `--cpu-quota=${cpu.min * 100000}`, tag];
 			const options = { stdio: ["pipe", process.stdout, process.stderr] };
 			const child = this.childProcess.spawn("docker", args, options);
 
@@ -16,7 +16,7 @@ class Docker {
 
 			child.on("close", (code) => {
 				// console.log(`child process exited with code ${code}`);
-				resolve();
+				resolve(code);
 			});
 		});
 	}

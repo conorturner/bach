@@ -4,11 +4,30 @@ const figlet = require("figlet");
 const shell = require("shelljs");
 const program = require("commander");
 
+const LocalStorage = require("../modules/Storage/LocalStorage/LocalStorage");
+
+const localStorage = new LocalStorage();
+
 program
-	.command('rm <dir>')
-	.option('-r, --recursive', 'Remove recursively')
-	.action((dir, cmd) => {
-		console.log('remove ' + dir + (cmd.recursive ? ' recursively' : ''))
+	.command("storage [command] [uri]")
+	.usage("create-index [uri]")
+	.option("-r, --recursive", "Placeholder")
+	.action((command, uri, cmd) => {
+		if (!cmd) return console.log("Please specific a data uri"); //TODO: create dynamic inquirer based prompt system for leading through local/cloud storage to select one
+
+		if (/[a-z/.]/i.test(uri)) {
+			let path, cwd = process.cwd();
+
+			if (uri.startsWith("./")) path = uri.replace("./", cwd, 1);
+			else if (uri.startsWith("/")) path = uri;
+			else path = `${cwd}/${uri}`;
+
+			console.log(path);
+
+			localStorage.createDelimiterIndex(path)
+				.then(console.log)
+				.catch(console.error);
+		}
 	});
 
 module.exports = program;

@@ -34,6 +34,7 @@ class Task {
 			case "local": {
 				return this.docker.run({
 					tag: bachfile["logical-name"],
+					cpu: bachfile.hardware.cpu,
 					env: { TILE_NUM: 5 },
 					inputStream
 				});

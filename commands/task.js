@@ -16,9 +16,10 @@ const orchestrator = new Orchestrator();
 
 // User Interface
 program
-	.command("run")
+	.command("task-run")
 	.option("-t, --target <target>", "Specify target")
 	.option("-d, --data <data>", "Specify data source")
+	.option("-s, --scan", "should the range of resources be scanned")
 	.action((cmd) => {
 		const { data, target } = cmd;
 		if (!data) {
@@ -31,16 +32,24 @@ program
 
 		const options = { dataUri: `${path}/${data}`, target };
 
-		console.time("run");
-		orchestrator.run(bachfile, options)
-			.then(result => {
-				console.timeEnd("run");
+		[6,8,10,12].reduce((promise, min) => {
+			return promise.then(() => {
+
+				console.time(`${min} tiles`);
+				bachfile.tile.min = min;
+				return orchestrator.run(bachfile, options)
+					.then(result => {
+						console.timeEnd(`${min} tiles`);
+					})
+					.catch(console.error);
 			})
-			.catch(console.error);
+		}, Promise.resolve());
+
+
 	});
 
 program
-	.command("build")
+	.command("task-build")
 	.action((action, cmd) => {
 		// console.log(process.cwd())
 

@@ -1,4 +1,5 @@
 const Storage = require("../Storage");
+const BigNumber = require("bignumber.js");
 
 class LocalStorage extends Storage {
 
@@ -14,9 +15,52 @@ class LocalStorage extends Storage {
 	getTileReadStreams(path, n) {
 		const fd = this.fs.openSync(path, "r");
 
+
 		return this.getChunkIndexes(fd, n)
 			.then(chunkIndexes => chunkIndexes.map(({ start, end }) =>
-				this.fs.createReadStream("", { fd, start, end, autoClose: false })));
+				this.fs.createReadStream("", { fd, start, end, autoClose: false })))
+			.then(readStreams => ({ readStreams, fd }));
+	}
+
+	createDelimiterIndex(path, output = path + ".index") {
+		const fd = this.fs.openSync(path, "r");
+		if (this.fs.existsSync(output)) this.fs.unlinkSync(output);
+		const { size } = this.fs.fstatSync(fd);
+
+		const rs = this.fs.createReadStream("", { fd }); // high watermark has been known to effect performance
+		const outputStream = this.fs.createWriteStream(output); // high watermark has been known to effect performance
+
+		let index = 0;
+
+		rs.on("readable", () => {
+			let data;
+			while ((data = rs.read()) !== null) {
+				const dataString = data.toString();
+
+				LocalStorage.indexesOf(dataString, "\n", index).forEach(i => {
+					outputStream.write(i.toString(16) + "\n");
+				});
+				index += data.length;
+			}
+			console.log(Math.round((index / size) * 1000) / 10 + "%");
+		});
+
+		return new Promise(resolve => {
+			rs.on("close", () => {
+				resolve();
+			});
+		});
+	}
+
+	static indexesOf(string, char, offset = 0) {
+		let indexes = [];
+
+		for (let i = 0; i < string.length; i++)
+			if (string[i] === char) indexes.push(i + offset);
+
+
+		// console.log(indexes)
+		return indexes;
 	}
 
 	getChunkIndexes(fd, n) {
