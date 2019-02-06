@@ -15,7 +15,6 @@ class LocalStorage extends Storage {
 	getTileReadStreams(path, n) {
 		const fd = this.fs.openSync(path, "r");
 
-
 		return this.getChunkIndexes(fd, n)
 			.then(chunkIndexes => chunkIndexes.map(({ start, end }) =>
 				this.fs.createReadStream("", { fd, start, end, autoClose: false })))
@@ -30,7 +29,7 @@ class LocalStorage extends Storage {
 		const rs = this.fs.createReadStream("", { fd }); // high watermark has been known to effect performance
 		const outputStream = this.fs.createWriteStream(output); // high watermark has been known to effect performance
 
-		let index = 0;
+		let index = 0, indexArray = [];
 
 		rs.on("readable", () => {
 			let data;
@@ -38,8 +37,11 @@ class LocalStorage extends Storage {
 				const dataString = data.toString();
 
 				LocalStorage.indexesOf(dataString, "\n", index).forEach(i => {
-					outputStream.write(i.toString(16) + "\n");
+					indexArray.push(i);
+					// outputStream.write(i.toString(36) + "\n");
 				});
+
+
 				index += data.length;
 			}
 			console.log(Math.round((index / size) * 1000) / 10 + "%");
@@ -47,10 +49,25 @@ class LocalStorage extends Storage {
 
 		return new Promise(resolve => {
 			rs.on("close", () => {
-				resolve();
+
+				let max = 0, min = Number.MAX_SAFE_INTEGER, mean = 0;
+				indexArray.forEach((item, i) => {
+					if (i === 0) mean = item;
+					else mean = (mean + item) / 2; // is this valid maths?
+					if (item < min) min = item;
+					if (item > max) max = item;
+				});
+				outputStream.write(JSON.stringify({ max, min, mean, size, indexArray }));
+				resolve(indexArray.length);
 			});
 		});
 	}
+
+	readDelimiterIndex(path) {
+		if (!this.fs.existsSync(path)) return;
+		else return JSON.parse(this.fs.readFileSync(path).toString());
+	}
+
 
 	static indexesOf(string, char, offset = 0) {
 		let indexes = [];
@@ -95,7 +112,7 @@ class LocalStorage extends Storage {
 			.then(divisions => [0].concat(divisions))
 			.then(divisions => divisions.map((division, index) => {
 				if (index === 0) return { start: 0, end: divisions[index + 1] };
-				else if (index === divisions.length - 1) return { start: divisions[index - 1], end: size };
+				else if (index === divisions.length - 1) return { start: divisions[index ], end: size };
 				else return { start: division, end: divisions[index + 1] };
 			}));
 	}

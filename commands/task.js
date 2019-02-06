@@ -32,7 +32,7 @@ program
 
 		const options = { dataUri: `${path}/${data}`, target };
 
-		[6,8,10,12].reduce((promise, min) => {
+		[10].reduce((promise, min) => {
 			return promise.then(() => {
 
 				console.time(`${min} tiles`);
@@ -42,7 +42,7 @@ program
 						console.timeEnd(`${min} tiles`);
 					})
 					.catch(console.error);
-			})
+			});
 		}, Promise.resolve());
 
 

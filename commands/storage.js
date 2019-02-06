@@ -24,8 +24,12 @@ program
 
 			console.log(path);
 
+			console.time("gen index");
 			localStorage.createDelimiterIndex(path)
-				.then(console.log)
+				.then(result => {
+					console.timeEnd("gen index");
+					console.log(result);
+				})
 				.catch(console.error);
 		}
 	});
