@@ -4,11 +4,20 @@ class Docker {
 		this.childProcess = childProcess;
 	}
 
-	run({ tag, env, inputStream, cpu }) {
+	run({ tag, env, inputStream, cpu, entry, entryArgs }) {
 		const envArgs = Object.keys(env).map(key => `-e ${key}=${JSON.stringify(env[key])}`).join(" ");
 
 		return new Promise((resolve) => {
-			const args = ["run", envArgs, "-i", `--cpu-quota=${cpu.min * 100000}`, tag];
+			const args = [
+				"run",
+				"--entrypoint", entry,
+				envArgs,
+				"-i",
+				`--cpu-quota=${cpu.min * 100000}`,
+				tag,
+				...entryArgs
+			];
+
 			const options = { stdio: ["pipe", process.stdout, process.stderr] };
 			const child = this.childProcess.spawn("docker", args, options);
 

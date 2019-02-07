@@ -36,6 +36,8 @@ class Task {
 					tag: bachfile["logical-name"],
 					cpu: bachfile.hardware.cpu,
 					env: { TILE_NUM: 5 },
+					entry: bachfile.binary,
+					entryArgs: bachfile.args,
 					inputStream
 				});
 			}

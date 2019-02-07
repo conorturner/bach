@@ -7,7 +7,7 @@ class NodeBuilder extends TaskBuilder {
 	}
 
 	build(bachfile) {
-		this.inject(`${__dirname}/injections/node-wrapper.js`, "/build/index.js");
+		// this.inject(`${__dirname}/injections/node-wrapper.js`, "/build/index.js");
 		this.inject(`${__dirname}/injections/.node11.Dockerfile`, "/build/.temp.Dockerfile");
 
 		const tag = bachfile["logical-name"];
