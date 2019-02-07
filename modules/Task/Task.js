@@ -20,13 +20,14 @@ class Task {
 		return nodeBuilder.build(bachfile);
 	}
 
-	run({ bachfile, target = "local", inputStream }) {
+	run({ bachfile, target = "local", inputStream, env }) { // TODO: add output stream
 		switch (target) {
 			case "local": {
+
 				return this.docker.run({
 					tag: bachfile["logical-name"],
 					cpu: bachfile.hardware.cpu,
-					env: { INPUT_TYPE: "stdin", BINARY: bachfile.binary, ARGS: JSON.stringify(bachfile.args) },
+					env,
 					entry: "node",
 					entryArgs: ["build/index.js"],
 					inputStream

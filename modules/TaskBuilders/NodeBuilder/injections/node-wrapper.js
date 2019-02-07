@@ -1,6 +1,7 @@
 const childProcess = require("child_process");
+const net = require("net");
 
-const { INPUT_TYPE, BINARY, ARGS } = process.env;
+const { INPUT_TYPE, BINARY, ARGS, SOURCE_HOST, SOURCE_PORT } = process.env;
 
 switch (INPUT_TYPE) {
 	case "stdin": {
@@ -8,6 +9,7 @@ switch (INPUT_TYPE) {
 		const options = { stdio: [process.stdin, process.stdout, process.stderr] }; // share STD interface with this parent process
 		const child = childProcess.spawn(BINARY, JSON.parse(ARGS), options);
 		child.on("close", (code) => {
+			process.exit(code);
 			// console.log(`child process exited with code ${code}`);
 		});
 
@@ -19,7 +21,17 @@ switch (INPUT_TYPE) {
 		break;
 	}
 	case "tcp": {
-		console.log("tcp", BINARY, ARGS);
+		const options = { stdio: ["pipe", process.stdout, process.stderr] }; // share STD interface with this parent process
+		const child = childProcess.spawn(BINARY, JSON.parse(ARGS), options);
+		const client = net.connect(SOURCE_PORT, SOURCE_HOST, () => console.log("client connected!"));
+
+		client.pipe(child.stdin);
+
+		child.on("close", (code) => {
+			console.log(`child process exited with code ${code}`);
+			process.exit(code);
+		});
+
 		break;
 	}
 }

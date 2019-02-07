@@ -23,12 +23,12 @@ program
 	.option("-s, --scan", "should the range of resources be scanned")
 	.action((cmd) => {
 		const { target, partition = "1" } = cmd;
-
 		const path = process.cwd();
 		const bachfile = require(`${path}/bachfile.json`);
 		console.log(bachfile);
 
-		const options = { target, partition: parseInt(partition, 10) };
+		const type = (process.stdin.isTTY ? !cmd.data : true) ? cmd.data ? "block" : "stream"  : "unknown"; // XOR baby
+		const options = { type, target, partition: parseInt(partition, 10) };
 		if (cmd.data && !process.stdin.isTTY) return console.log("Cannot specify both data and pipe input");
 		if (cmd.data) options.dataUri = `${path}/${cmd.data}`;
 		if (!process.stdin.isTTY) options.inputStream = process.stdin;
