@@ -19,31 +19,26 @@ program
 	.command("task-run")
 	.option("-t, --target <target>", "Specify target")
 	.option("-d, --data <data>", "Specify data source")
+	.option("-p, --partition <partition>", "How many partitions/shards should be used")
 	.option("-s, --scan", "should the range of resources be scanned")
 	.action((cmd) => {
-		const { data, target } = cmd;
-		if (!data) {
-			console.log("--data required");
-			return;
-		}
+		const { target, partition = "1" } = cmd;
+
 		const path = process.cwd();
 		const bachfile = require(`${path}/bachfile.json`);
 		console.log(bachfile);
 
-		const options = { dataUri: `${path}/${data}`, target };
+		const options = { target, partition: parseInt(partition, 10) };
+		if (cmd.data && !process.stdin.isTTY) return console.log("Cannot specify both data and pipe input");
+		if (cmd.data) options.dataUri = `${path}/${cmd.data}`;
+		if (!process.stdin.isTTY) options.inputStream = process.stdin;
 
-		[4,6,8].reduce((promise, min) => {
-			return promise.then(() => {
-
-				console.time(`${min} tiles`);
-				bachfile.tile.min = min;
-				return orchestrator.run(bachfile, options)
-					.then(result => {
-						console.timeEnd(`${min} tiles`);
-					})
-					.catch(console.error);
-			});
-		}, Promise.resolve());
+		console.time(`${partition} tiles`);
+		return orchestrator.run(bachfile, options)
+			.then(result => {
+				console.timeEnd(`${partition} tiles`);
+			})
+			.catch(console.error);
 
 
 	});

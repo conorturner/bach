@@ -1,6 +1,18 @@
 # Bach
 Orchestrate a vendor agnostic cloud.
 
+## Usage (so far)
+
+From within the same folder as a bachfile.json
+```bash
+$ bach task-build
+```
+Where citylots.features.dat is a file in the current directory
+```bash
+$ bach task-run --data citylots.features.dat -p 8
+```
+
+
 ## Task Definitions
 
 #### Run a task that will run until completion and can tolerate being interrupted.

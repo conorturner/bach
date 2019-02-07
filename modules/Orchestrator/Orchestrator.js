@@ -23,13 +23,10 @@ class Orchestrator {
 
 	}
 
-	runMapper(bachfile, { dataUri }) {
+	runMapper(bachfile, { dataUri, partition }) {
 		// TODO: accept other uri types than local
-		const { tile } = bachfile;
-		const { min } = tile;
 
-
-		return this.localStorage.getTileReadStreams(dataUri, min)
+		return this.localStorage.getTileReadStreams(dataUri, partition)
 			.then(({ readStreams, fd }) => {
 				return Promise.all(readStreams.map((readStream, i) => {
 					console.time(`task ${i} - ${Math.round((readStream.end - readStream.start)/1e6)}mb`);
@@ -44,13 +41,13 @@ class Orchestrator {
 					return result;
 				});
 			});
+	}
 
-		// const size = this.localStorage.getFileSize(dataUri);
-		// const goalTileSize = Math.round(size / min);
-		// console.log(size,goalTileSize);
-		// 1. find exact chunk markers in file
-		// 2. create read stream for each file
-		// 3. run a task for each tile, streaming the data in
+	runStreamProcessor(bachfile, { inputStream, partition }){
+		// read from input stream and split on delimiter defined in bachfile
+		// use a load balancing strategy to send data chunk by chunk into the write stream for each partition
+		// stream data out of paritions and recombine without ordering
+		// TODO: if partition is set to 'auto' - scale partitions up and down based on input buffer length/some other constraint
 	}
 
 }

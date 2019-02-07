@@ -16,17 +16,8 @@ class Task {
 		this.childProcess.execSync(`rm -rf ${path}/build`);
 		this.childProcess.execSync(`mkdir ${path}/build`);
 
-		switch (bachfile.runtime) {
-			case "nodejs11": {
-				const nodeBuilder = new NodeBuilder({ path });
-				return nodeBuilder.build(bachfile);
-			}
-			default: {
-				console.error("unknown runtime");
-
-				break;
-			}
-		}
+		const nodeBuilder = new NodeBuilder({ path }); // TODO: make this generic builder
+		return nodeBuilder.build(bachfile);
 	}
 
 	run({ bachfile, target = "local", inputStream }) {
@@ -35,9 +26,9 @@ class Task {
 				return this.docker.run({
 					tag: bachfile["logical-name"],
 					cpu: bachfile.hardware.cpu,
-					env: { TILE_NUM: 5 },
-					entry: bachfile.binary,
-					entryArgs: bachfile.args,
+					env: { INPUT_TYPE: "stdin", BINARY: bachfile.binary, ARGS: JSON.stringify(bachfile.args) },
+					entry: "node",
+					entryArgs: ["build/index.js"],
 					inputStream
 				});
 			}

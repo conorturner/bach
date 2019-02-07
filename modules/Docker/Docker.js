@@ -5,13 +5,14 @@ class Docker {
 	}
 
 	run({ tag, env, inputStream, cpu, entry, entryArgs }) {
-		const envArgs = Object.keys(env).map(key => `-e ${key}=${JSON.stringify(env[key])}`).join(" ");
+		// const envArgs = Object.keys(env).map(key => `-e ${key}='${JSON.stringify(env[key])}'`);
+		const envArgs = Object.keys(env).reduce((acc, key) => acc.concat(["-e", `${key}=${env[key]}`]),[]);
 
 		return new Promise((resolve) => {
 			const args = [
 				"run",
 				"--entrypoint", entry,
-				envArgs,
+				...envArgs,
 				"-i",
 				`--cpu-quota=${cpu.min * 100000}`,
 				tag,

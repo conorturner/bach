@@ -2,16 +2,11 @@
   "logical-name": "json-searcher",
   "type": "mapper",
   "interruptible": true,
-  "runtime": "nodejs11",
   "binary": "node",
   "args": [
     "index.js"
   ],
-  "tile": {
-    "min": 8,
-    "max": 16,
-    "delimiter": "\n"
-  },
+  "delimiter": "\n",
   "hardware": {
     "cpu": {
       "min": 0.3,
