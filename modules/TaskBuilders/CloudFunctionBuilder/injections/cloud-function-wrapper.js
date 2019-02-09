@@ -3,7 +3,7 @@ const net = require("net");
 
 exports.invoke = event => {
 	const env = JSON.parse(Buffer.from(event.data, "base64").toString());
-	console.log(env);
+	// console.log(env);
 
 	const { INPUT_TYPE, BINARY, ARGS, SOURCE_HOST, SOURCE_PORT } = env;
 
@@ -19,7 +19,7 @@ exports.invoke = event => {
 					const options = { stdio: ["pipe", process.stdout, process.stderr] }; // share STD interface with this parent process
 					const child = childProcess.spawn(BINARY, ARGS, options);
 					const client = net.connect(SOURCE_PORT, SOURCE_HOST, () => console.log("client connected!"));
-					client.setTimeout(5000, () => {
+					client.setTimeout(10000, () => {
 						console.error("tcp connection timed out");
 						client.end();
 						resolve();

@@ -5,7 +5,7 @@ class GoogleCloud {
 	}
 
 	deployCloudFunction({ path, name, runtime, entry, trigger }) {
-		const cmd = `gcloud functions deploy ${ name } --runtime ${ runtime } --entry-point ${ entry } --trigger-topic ${ trigger }`;
+		const cmd = `gcloud functions deploy ${ name } --runtime ${ runtime } --entry-point ${ entry } --trigger-topic ${ trigger } --region europe-west1 --memory=512`;
 		const wrapper = `cd ${ path } ; ${ cmd }`;
 
 
@@ -28,15 +28,6 @@ class GoogleCloud {
 				else resolve({ status: "ok", stdout, stderr });
 			});
 		});
-		//
-		// try {
-		// 	this.childProcess.execSync(`gcloud pubsub topics create bach-${ name }`, { stdio: [null, null, null] });
-		// }
-		// catch (e) {
-		// 	if (e.message && e.message.includes("Resource already exists in the project"))
-		// 		console.log(`- pub/sub topic bach-${ name } exits`);
-		// 	else throw e;
-		// }
 	}
 
 	sendPubSubMessage({ name, message }) {

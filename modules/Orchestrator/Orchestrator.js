@@ -96,7 +96,7 @@ class Orchestrator {
 						inputStream.on("end", () => {
 							sockets.forEach(stream => stream.end(null)); // send end of stream to tasks
 
-							Promise.all(tasks.map(task => new Promise(r => task.on("close", (code) => r(code)))))
+							Promise.all(sockets.map(socket => new Promise(r => socket.on("close", (code) => r(code)))))
 								.then((result) => {
 									this.loadBalancer.close();
 									console.log(result);
