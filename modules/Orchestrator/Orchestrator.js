@@ -70,8 +70,10 @@ class Orchestrator {
 
 				const tasks = new Array(partition).fill(null).map(() => this.task.run({ bachfile, env, target }));
 
+				console.time("awaitSockets");
 				return this.loadBalancer.awaitSockets(tasks.length)
 					.then(sockets => new Promise(resolve => {
+						console.timeEnd("awaitSockets");
 
 						let remainder = "", roundRobin = 0;
 						inputStream.on("readable", () => {

@@ -36,8 +36,10 @@ class LoadBalancer extends EventEmitter {
 	awaitSockets(count) {
 		if (this.sockets.length === count) return Promise.resolve(this.sockets);
 		else return new Promise(resolve =>
-			this.on("socket", () =>
-				this.sockets.length === count ? resolve(this.sockets) : null));
+			this.on("socket", () => {
+				console.log(`socket connected: ${this.sockets.length}`);
+				this.sockets.length === count ? resolve(this.sockets) : null;
+			}));
 	}
 }
 

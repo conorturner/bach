@@ -5,7 +5,7 @@ class GoogleCloud {
 	}
 
 	deployCloudFunction({ path, name, runtime, entry, trigger }) {
-		const cmd = `gcloud functions deploy ${ name } --runtime ${ runtime } --entry-point ${ entry } --trigger-topic ${ trigger } --region europe-west1 --memory=512`;
+		const cmd = `gcloud functions deploy ${ name } --runtime ${ runtime } --entry-point ${ entry } --trigger-topic ${ trigger } --region europe-west1 --memory=512 --timeout=300`;
 		const wrapper = `cd ${ path } ; ${ cmd }`;
 
 
