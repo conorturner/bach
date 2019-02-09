@@ -1,35 +1,42 @@
 const TaskBuilder = require("../TaskBuilder/TaskBuilder");
+const GoogleCloud = require("../../GoogleCloud/GoogleCloud");
 
 class CloudFunctionBuilder extends TaskBuilder {
-	constructor({ path }) {
+	constructor({ path, googleCloud = new GoogleCloud() }) {
 		super({ path });
+		this.googleCloud = googleCloud;
 	}
 
 	build(bachfile) {
-		this.inject(`${__dirname}/injections/cloud-function-wrapper.js`, "/build/function.js");
+		this.mkdir("build/child");
+		this.mkdir("build/parent");
+		this.copySrc("build/child");
+		this.inject(`${ __dirname }/injections/cloud-function-wrapper.js`, "/build/child/function.js");
 		// this.inject(`${__dirname}/injections/.gcf.package.json`, "/build/package.json");
 		return Promise.resolve({});
 	}
 
 	deploy(bachfile) {
 		const name = bachfile["logical-name"];
-		try {
-			this.childProcess.execSync(`gcloud pubsub topics create bach-${name}`, { stdio: [null, null, null] });
-		}
-		catch (e) {
-			if (e.message && e.message.includes("Resource already exists in the project"))
-				console.log(`- pub/sub topic bach-${name} exits`);
-			else throw e;
-		}
+		const childName = `bach-${ name }-child`;
+		const parentName = `bach-${ name }-parent`;
+		const topicName = `bach-${ name }-start-child`;
 
-		const cmd = `gcloud functions deploy bach-${name} --runtime nodejs8 --entry-point invoke --trigger-topic bach-${name}`;
-		const wrapper = `cd ${this.path}/build ; ${cmd}`;
+		return this.googleCloud.createPubSubTopic({ name: topicName })
+			.then(result => {
+				if (result.status === "exists") console.log(`- pub/sub topic ${ topicName } exits`);
+				else console.log(`- pub/sub topic ${ topicName } created`);
 
+				return this.googleCloud.deployCloudFunction({
+					path: `${ this.path }/build/child`,
+					name: childName,
+					runtime: "nodejs8",
+					entry: "invoke",
+					trigger: topicName
+				});
 
-		return new Promise((resolve, reject) => {
-			this.childProcess.exec(wrapper, (error, stdout, stderr) =>
-				error ? reject(error) : resolve({ stdout, stderr }));
-		});
+			});
+
 	}
 }
 

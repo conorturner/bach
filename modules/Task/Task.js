@@ -17,7 +17,6 @@ class Task {
 		// Clean build folder.
 		this.childProcess.execSync(`rm -rf ${path}/build`);
 		this.childProcess.execSync(`mkdir ${path}/build`);
-		this.childProcess.execSync(`rsync -av ${path}/src/ ${path}/build/`); // may make more sense to use cp for compatibility
 
 		switch (target) {
 			case "docker": {
