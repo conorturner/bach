@@ -14,6 +14,7 @@ class Docker {
 			...envArgs,
 			"-i",
 			`--cpu-quota=${cpu.min * 100000}`,
+			"--memory", "60m",
 			tag,
 			...entryArgs
 		];

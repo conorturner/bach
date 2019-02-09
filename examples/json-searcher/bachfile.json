@@ -1,10 +1,9 @@
 {
   "logical-name": "json-searcher",
-  "type": "mapper",
   "interruptible": true,
   "binary": "node",
   "args": [
-    "index.js"
+    "bin.js"
   ],
   "delimiter": "\n",
   "hardware": {

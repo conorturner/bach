@@ -4,7 +4,7 @@ let remainder = "", acc = {};
 process.stdin.on("readable", () => {
 	let chunk;
 
-	while ((chunk = process.stdin.read()) !== null) { // this does no back pressuring (will just fill memory)
+	while ((chunk = process.stdin.read()) !== null) { // TODO: this does no back pressuring (will just fill memory)
 
 		const string = remainder + chunk.toString();
 		const units = string.split("\n");
@@ -24,7 +24,6 @@ process.stdin.on("readable", () => {
 		});
 
 	}
-
 });
 
 process.stdin.on("end", () => {

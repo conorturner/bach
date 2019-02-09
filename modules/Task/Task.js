@@ -1,5 +1,7 @@
 const Docker = require("../Docker/Docker");
-const NodeBuilder = require("../TaskBuilders/NodeBuilder/NodeBuilder");
+const DockerBuilder = require("../TaskBuilders/DockerBuilder/DockerBuilder");
+const LambdaBuilder = require("../TaskBuilders/LambdaBuilder/LambdaBuilder");
+const CloudFunctionBuilder = require("../TaskBuilders/CloudFunctionBuilder/CloudFunctionBuilder");
 
 class Task {
 
@@ -8,16 +10,32 @@ class Task {
 		this.childProcess = childProcess;
 	}
 
-	build(path) {
+	build({ target, path }) {
 		const bachfile = this.readBachfile(path);
 		if (!path) return Promise.resolve();
 
 		// Clean build folder.
 		this.childProcess.execSync(`rm -rf ${path}/build`);
 		this.childProcess.execSync(`mkdir ${path}/build`);
+		this.childProcess.execSync(`rsync -av ${path}/src/ ${path}/build/`); // may make more sense to use cp for compatibility
 
-		const nodeBuilder = new NodeBuilder({ path }); // TODO: make this generic builder
-		return nodeBuilder.build(bachfile);
+		switch (target) {
+			case "docker": {
+				const dockerBuilder = new DockerBuilder({ path });
+				return dockerBuilder.build(bachfile);
+			}
+			case "lambda": {
+				const lambdaBuilder = new LambdaBuilder({ path });
+				return lambdaBuilder.build(bachfile);
+			}
+			case "gcf": {
+				const cloudFunctionBuilder = new CloudFunctionBuilder({ path });
+				return cloudFunctionBuilder.build(bachfile);
+			}
+
+		}
+
+
 	}
 
 	run({ bachfile, target = "local", inputStream, env }) { // TODO: add output stream
@@ -25,11 +43,11 @@ class Task {
 			case "local": {
 
 				return this.docker.run({
-					tag: bachfile["logical-name"],
+					tag: `bach-${bachfile["logical-name"]}`,
 					cpu: bachfile.hardware.cpu,
 					env,
 					entry: "node",
-					entryArgs: ["build/index.js"],
+					entryArgs: [".docker-wrapper.js"],
 					inputStream
 				});
 			}
@@ -38,6 +56,14 @@ class Task {
 				throw new Error("Unknown runtime target");
 			}
 		}
+	}
+
+	deploy({ path }) {
+		const bachfile = this.readBachfile(path);
+		if (!path) return Promise.resolve();
+
+		const cloudFunctionBuilder = new CloudFunctionBuilder({ path });
+		return cloudFunctionBuilder.deploy(bachfile);
 	}
 
 	readBachfile(path) {

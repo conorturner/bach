@@ -21,12 +21,15 @@
   },
   "homepage": "https://github.com/conorturner/bach#readme",
   "dependencies": {
+    "@google-cloud/pubsub": "^0.24.1",
     "asciichart": "^1.5.7",
     "bignumber.js": "^8.0.2",
     "chalk": "^2.4.2",
     "commander": "^2.19.0",
     "figlet": "^1.2.1",
     "inquirer": "^6.2.1",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5",
     "shelljs": "^0.8.3"
   },
   "bin": {

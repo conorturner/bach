@@ -56,21 +56,29 @@ class Orchestrator {
 		// TODO: if partition is set to 'auto' - scale partitions up and down based on input buffer length/some other constraint
 
 		return this.loadBalancer.open()
-			.then(server => {
+			.then(({ server, localIp }) => {
 
 				const { port } = server.address();
-				const SOURCE_HOST = "192.168.0.10";
+				const SOURCE_HOST = localIp;
+
+				// const env = {
+				// 				// 	INPUT_TYPE: "tcp",
+				// 				// 	BINARY: bachfile.binary,
+				// 				// 	ARGS: JSON.stringify(bachfile.args),
+				// 				// 	SOURCE_HOST,
+				// 				// 	SOURCE_PORT: port
+				// 				// };
 
 				const env = {
-					INPUT_TYPE: "tcp",
-					BINARY: bachfile.binary,
-					ARGS: JSON.stringify(bachfile.args),
-					SOURCE_HOST,
-					SOURCE_PORT: port
+					INPUT_TYPE: 'tcp',
+					BINARY: 'node',
+					ARGS: JSON.stringify(['bin.js']),
+					SOURCE_HOST: '1.1.1.1',
+					SOURCE_PORT: '8080'
 				};
 				const tasks = new Array(partition).fill(null).map(() => this.task.run({ bachfile, env }));
 
-				return this.getTcpStreams(tasks.length)
+				return this.loadBalancer.awaitSockets(tasks.length)
 					.then(sockets => new Promise(resolve => {
 
 						let remainder = "", roundRobin = 0;
@@ -110,15 +118,6 @@ class Orchestrator {
 					}));
 			});
 	}
-
-	getTcpStreams(count) {
-		if (this.loadBalancer.sockets.length === count) return Promise.resolve(this.loadBalancer.sockets);
-		else return new Promise(resolve =>
-			this.loadBalancer.on("socket", () =>
-				this.loadBalancer.sockets.length === count ? resolve(this.loadBalancer.sockets) : null));
-	}
-
-
 }
 
 module.exports = Orchestrator;

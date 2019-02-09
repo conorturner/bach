@@ -27,7 +27,7 @@ program
 		const bachfile = require(`${path}/bachfile.json`);
 		console.log(bachfile);
 
-		const type = (process.stdin.isTTY ? !cmd.data : true) ? cmd.data ? "block" : "stream"  : "unknown"; // XOR baby
+		const type = (process.stdin.isTTY ? !cmd.data : true) ? cmd.data ? "block" : "stream" : "unknown"; // XOR baby
 		const options = { type, target, partition: parseInt(partition, 10) };
 		if (cmd.data && !process.stdin.isTTY) return console.log("Cannot specify both data and pipe input");
 		if (cmd.data) options.dataUri = `${path}/${cmd.data}`;
@@ -45,12 +45,30 @@ program
 
 program
 	.command("task-build")
+	.option("-t, --target <target>", "Specify target docker|lambda")
+	.action((cmd) => {
+		// console.log(process.cwd())
+		const { target = "docker" } = cmd;
+
+		console.time("- build");
+		task.build({ path: process.cwd(), target })
+			.then(result => console.timeEnd("- build"))
+			.catch(console.error);
+	});
+
+program
+	.command("task-deploy")
 	.action((action, cmd) => {
 		// console.log(process.cwd())
 
-		task.build(process.cwd())
-			.then(result => console.log(result.stdout))
+		console.time("- deploy");
+		task.deploy({ path: process.cwd(), target: null })
+			.then(result => {
+				console.timeEnd("- deploy");
+				// console.log(result.stdout);
+			})
 			.catch(console.error);
 	});
 
 module.exports = program;
+

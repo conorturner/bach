@@ -11,6 +11,10 @@ Where citylots.features.dat is a file in the current directory
 ```bash
 $ bach task-run --data citylots.features.dat -p 8
 ```
+Stream input
+```bash
+$ cat citylots.features.dat | bach task-run -p 8
+```
 
 
 ## Task Definitions
