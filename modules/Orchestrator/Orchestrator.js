@@ -74,6 +74,7 @@ class Orchestrator {
 				return this.loadBalancer.awaitSockets(tasks.length)
 					.then(sockets => new Promise(resolve => {
 						console.timeEnd("awaitSockets");
+						console.time("streaming");
 
 						let remainder = "", roundRobin = 0;
 						inputStream.on("readable", () => {
@@ -100,6 +101,7 @@ class Orchestrator {
 
 							Promise.all(sockets.map(socket => new Promise(r => socket.on("close", (code) => r(code)))))
 								.then((result) => {
+									console.timeEnd("streaming");
 									this.loadBalancer.close();
 									console.log(result);
 									resolve();

@@ -54,7 +54,6 @@ class Task {
 			}
 			case "gcf": {
 				return this.googleCloud.sendPubSubMessage({ name: `bach-${ bachfile["logical-name"] }-start-child`, message: env })
-					.then(() => console.log("pubsub message sent"))
 					.catch(console.error);
 			}
 
