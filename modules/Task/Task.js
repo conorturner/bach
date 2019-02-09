@@ -1,12 +1,14 @@
 const Docker = require("../Docker/Docker");
+const GoogleCloud = require("../GoogleCloud/GoogleCloud");
 const DockerBuilder = require("../TaskBuilders/DockerBuilder/DockerBuilder");
 const LambdaBuilder = require("../TaskBuilders/LambdaBuilder/LambdaBuilder");
 const CloudFunctionBuilder = require("../TaskBuilders/CloudFunctionBuilder/CloudFunctionBuilder");
 
 class Task {
 
-	constructor({ docker = new Docker(), childProcess = require("child_process") } = {}) {
+	constructor({ docker = new Docker(), googleCloud = new GoogleCloud(), childProcess = require("child_process") } = {}) {
 		this.docker = docker;
+		this.googleCloud = googleCloud;
 		this.childProcess = childProcess;
 	}
 
@@ -15,8 +17,8 @@ class Task {
 		if (!path) return Promise.resolve();
 
 		// Clean build folder.
-		this.childProcess.execSync(`rm -rf ${path}/build`);
-		this.childProcess.execSync(`mkdir ${path}/build`);
+		this.childProcess.execSync(`rm -rf ${ path }/build`);
+		this.childProcess.execSync(`mkdir ${ path }/build`);
 
 		switch (target) {
 			case "docker": {
@@ -42,13 +44,18 @@ class Task {
 			case "local": {
 
 				return this.docker.run({
-					tag: `bach-${bachfile["logical-name"]}`,
+					tag: `bach-${ bachfile["logical-name"] }`,
 					cpu: bachfile.hardware.cpu,
 					env,
 					entry: "node",
 					entryArgs: [".docker-wrapper.js"],
 					inputStream
 				});
+			}
+			case "gcf": {
+				return this.googleCloud.sendPubSubMessage({ name: `bach-${ bachfile["logical-name"] }-start-child`, message: env })
+					.then(() => console.log("pubsub message sent"))
+					.catch(console.error);
 			}
 
 			default: {
@@ -67,7 +74,7 @@ class Task {
 
 	readBachfile(path) {
 		try {
-			return JSON.parse(this.childProcess.execSync(`cat ${path}/bachfile.json`));
+			return JSON.parse(this.childProcess.execSync(`cat ${ path }/bachfile.json`));
 
 		}
 		catch (e) {

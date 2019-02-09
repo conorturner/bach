@@ -33,13 +33,13 @@ class Orchestrator {
 
 		return this.localStorage.getTileReadStreams(dataUri, partition)
 			.then(({ readStreams, fd }) => Promise.all(readStreams.map((readStream, i) => {
-				console.time(`task ${i} - ${Math.round((readStream.end - readStream.start) / 1e6)}mb`);
+				console.time(`task ${ i } - ${ Math.round((readStream.end - readStream.start) / 1e6) }mb`);
 
 				const env = { INPUT_TYPE: "stdin", BINARY: bachfile.binary, ARGS: JSON.stringify(bachfile.args) };
 				const child = this.task.run({ bachfile, inputStream: readStream, env });
 
 				return new Promise(resolve => child.on("close", (code) => {
-					console.timeEnd(`task ${i} - ${Math.round((readStream.end - readStream.start) / 1e6)}mb`);
+					console.timeEnd(`task ${ i } - ${ Math.round((readStream.end - readStream.start) / 1e6) }mb`);
 					resolve(code);
 				}));
 			})).then(result => {
@@ -48,7 +48,7 @@ class Orchestrator {
 			}));
 	}
 
-	runStreamProcessor(bachfile, { inputStream, partition }) {
+	runStreamProcessor(bachfile, { inputStream, partition, target, ip }) {
 		// read from input stream and split on delimiter defined in bachfile
 		// stream data out of paritions and recombine without ordering
 		// output chunks returned from processes may not be split on delimiter so some buffering will be required to prevent event corruption
@@ -58,24 +58,17 @@ class Orchestrator {
 			.then(({ server, localIp }) => {
 
 				const { port } = server.address();
-				const SOURCE_HOST = localIp;
-
-				// const env = {
-				// 				// 	INPUT_TYPE: "tcp",
-				// 				// 	BINARY: bachfile.binary,
-				// 				// 	ARGS: JSON.stringify(bachfile.args),
-				// 				// 	SOURCE_HOST,
-				// 				// 	SOURCE_PORT: port
-				// 				// };
+				const SOURCE_HOST = ip || localIp;
 
 				const env = {
-					INPUT_TYPE: 'tcp',
-					BINARY: 'node',
-					ARGS: JSON.stringify(['bin.js']),
-					SOURCE_HOST: '1.1.1.1',
-					SOURCE_PORT: '8080'
+					INPUT_TYPE: "tcp",
+					BINARY: bachfile.binary,
+					ARGS: target === "local" ? JSON.stringify(bachfile.args) : bachfile.args,
+					SOURCE_HOST,
+					SOURCE_PORT: port
 				};
-				const tasks = new Array(partition).fill(null).map(() => this.task.run({ bachfile, env }));
+
+				const tasks = new Array(partition).fill(null).map(() => this.task.run({ bachfile, env, target }));
 
 				return this.loadBalancer.awaitSockets(tasks.length)
 					.then(sockets => new Promise(resolve => {

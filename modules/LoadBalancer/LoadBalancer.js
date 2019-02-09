@@ -10,6 +10,7 @@ class LoadBalancer extends EventEmitter {
 	}
 
 	open() {
+		//TODO: option to specify port
 		this.server = this.net
 			.createServer((socket) => {
 				this.sockets.push(socket);

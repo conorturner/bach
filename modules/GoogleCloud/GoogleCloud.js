@@ -5,7 +5,7 @@ class GoogleCloud {
 	}
 
 	deployCloudFunction({ path, name, runtime, entry, trigger }) {
-		const cmd = `gcloud functions deploy ${ name } --runtime ${ runtime } --entry-point ${ entry } --trigger-topic ${trigger}`;
+		const cmd = `gcloud functions deploy ${ name } --runtime ${ runtime } --entry-point ${ entry } --trigger-topic ${ trigger }`;
 		const wrapper = `cd ${ path } ; ${ cmd }`;
 
 
@@ -37,6 +37,15 @@ class GoogleCloud {
 		// 		console.log(`- pub/sub topic bach-${ name } exits`);
 		// 	else throw e;
 		// }
+	}
+
+	sendPubSubMessage({ name, message }) {
+		const cmd = `gcloud pubsub topics publish ${ name } --message ${ JSON.stringify(JSON.stringify(message)) }`;
+
+		return new Promise((resolve, reject) => {
+			this.childProcess.exec(cmd, (error, stdout, stderr) =>
+				error ? reject(error) : resolve({ stdout, stderr }));
+		});
 	}
 }
 
