@@ -1,14 +1,13 @@
 // Classes
 const Task = require("../Task/Task.js");
 const LocalStorage = require("../Storage/LocalStorage/LocalStorage");
-const LoadBalancer = require("../LoadBalancer/LoadBalancer");
+const StreamCluster = require("../StreamCluster/StreamCluster");
 
 class Orchestrator {
 
-	constructor({ task = new Task(), localStorage = new LocalStorage(), loadBalancer = new LoadBalancer() } = {}) {
+	constructor({ task = new Task(), localStorage = new LocalStorage() } = {}) {
 		this.task = task;
 		this.localStorage = localStorage;
-		this.loadBalancer = loadBalancer;
 	}
 
 	run(bachfile, options) {
@@ -49,70 +48,13 @@ class Orchestrator {
 	}
 
 	runStreamProcessor(bachfile, { inputStream, partition, target, ip }) {
-		// read from input stream and split on delimiter defined in bachfile
-		// stream data out of paritions and recombine without ordering
-		// output chunks returned from processes may not be split on delimiter so some buffering will be required to prevent event corruption
 		// TODO: if partition is set to 'auto' - scale partitions up and down based on input buffer length/some other constraint
 
-		return this.loadBalancer.open()
-			.then(({ server, localIp }) => {
+		const streamCluster = new StreamCluster({ target, bachfile, callbackAddress: ip });
+		streamCluster.setDesiredNodes(partition);
+		streamCluster.pipeInputStream(inputStream);
 
-				const { port } = server.address();
-				const SOURCE_HOST = ip || localIp;
-
-				const env = {
-					INPUT_TYPE: "tcp",
-					BINARY: bachfile.binary,
-					ARGS: target === "local" ? JSON.stringify(bachfile.args) : bachfile.args,
-					SOURCE_HOST,
-					SOURCE_PORT: port
-				};
-
-				const tasks = new Array(partition).fill(null).map(() => this.task.run({ bachfile, env, target }));
-
-				console.time("awaitSockets");
-				return this.loadBalancer.awaitSockets(tasks.length)
-					.then(sockets => new Promise(resolve => {
-						console.timeEnd("awaitSockets");
-						console.time("streaming");
-
-						let remainder = "", roundRobin = 0;
-						inputStream.on("readable", () => {
-							let chunk;
-
-							while ((chunk = inputStream.read()) !== null) { // TODO: throttle this based on upstream back pressure
-
-								const string = remainder + chunk.toString();
-								const units = string.split(bachfile.delimiter);
-								remainder = units.splice(-1, 1)[0]; // take last chunk to append to next
-
-								units.forEach(unit => {
-									// use a load balancing strategy to send data chunk by chunk into the write stream for each partition
-									sockets[roundRobin].write(unit + bachfile.delimiter);
-									roundRobin = (roundRobin + 1) % tasks.length;
-								});
-
-							}
-
-						});
-
-						inputStream.on("end", () => {
-							sockets.forEach(stream => stream.end(null)); // send end of stream to tasks
-
-							Promise.all(sockets.map(socket => new Promise(r => socket.on("close", (code) => r(code)))))
-								.then((result) => {
-									console.timeEnd("streaming");
-									this.loadBalancer.close();
-									console.log(result);
-									resolve();
-								})
-								.catch(err => {
-									console.error(err);
-									resolve();
-								});
-						});
-					}));
-			});
+		return new Promise(resolve => streamCluster.loadBalancer.on("close", resolve));
 	}
 }
 

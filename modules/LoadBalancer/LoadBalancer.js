@@ -1,8 +1,7 @@
-const EventEmitter = require("events");
+const { Writable } = require("stream");
 
-// TODO: turn this into a writeable stream with back pressure
-class LoadBalancer extends EventEmitter {
-	constructor({ net = require("net") } = {}) {
+class LoadBalancer extends Writable {
+	constructor(options, { net = require("net") } = {}) {
 		super();
 
 		this.net = net;
@@ -12,15 +11,16 @@ class LoadBalancer extends EventEmitter {
 	open() {
 		//TODO: option to specify port
 		this.server = this.net
-			.createServer((socket) => {
-				this.sockets.push(socket);
-				this.emit("socket", socket);
-			})
+			.createServer()
 			.on("error", (err) => {
 				// handle errors here
 				throw err;
 			});
 
+		this.server.on("connection", (socket) => {
+			this.sockets.push({ writable: true, socket });
+			this.emit("socket", socket);
+		});
 
 		return new Promise(resolve => this.server.listen(() => {
 			require("dns").lookup(require("os").hostname(), (err, add, fam) => {
@@ -29,17 +29,56 @@ class LoadBalancer extends EventEmitter {
 		}));
 	}
 
-	close() {
-		this.server.close();
+	_write(chunk, encoding, callback) { // chunks should be tuples
+		this.getWritableSocket()
+			.then(socket => {
+				this.writeChunk({ socket, chunk, encoding, callback });
+			})
+			.catch(error => {
+				throw error;
+			});
 	}
 
-	awaitSockets(count) {
-		if (this.sockets.length === count) return Promise.resolve(this.sockets);
-		else return new Promise(resolve =>
-			this.on("socket", () => {
-				console.log(`socket connected: ${this.sockets.length}`);
-				this.sockets.length === count ? resolve(this.sockets) : null;
-			}));
+	writeChunk({ socket, chunk, encoding, callback }) {
+		const ok = socket.write(chunk, encoding, callback);
+
+		if (!ok) {
+			this.sockets[this.sockets.indexOf(socket)].writable = false;
+			socket.once("drain", () => {
+				this.sockets[this.sockets.indexOf(socket)].writable = true;
+				this.emit("socketDrain", socket); // pipe all socket events into one stream
+			});
+		}
+	}
+
+	getWritableSocket() { // this is probably over complex and covers edge cases which do not exists
+		const writableSockets = this.sockets.filter(({ writable }) => writable);
+		if (writableSockets.length !== 0) return Promise.resolve(writableSockets[0]); // back pressure load balancing
+		else return new Promise((resolve, reject) => {
+			const timeout = setTimeout(reject, 3 * 60 * 1000);
+			this.once("socketDrain", () => {
+				clearTimeout(timeout);
+				this.getWritableSocket().then(resolve).catch(reject);
+			});
+		});
+	}
+
+	_final(callback) {
+		this.sockets.forEach(stream => stream.end(null)); // send end of stream to tasks
+
+		Promise.all(this.sockets.map(socket => new Promise(r => socket.on("close", r))))
+			.then(() => {
+				this.close();
+				callback();
+			})
+			.catch(err => {
+				console.error(err);
+				callback();
+			});
+	}
+
+	close() {
+		this.server.close();
 	}
 }
 
