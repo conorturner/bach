@@ -22,21 +22,17 @@ switch (INPUT_TYPE) {
 	}
 	case "tcp": {
 
-		setTimeout(() => {
-
-			const options = { stdio: ["pipe", process.stdout, process.stderr] }; // share STD interface with this parent process
-			const child = childProcess.spawn(BINARY, JSON.parse(ARGS), options);
-			const client = net.connect(SOURCE_PORT, SOURCE_HOST, () => {
-				// console.log("client connected!")
-			});
-			client.setTimeout(10*1000, () => {
-				console.error("tcp connection timed out");
-				process.exit(0);
-			});
-			client.on("error", (error) => console.error("client error:", error));
-			client.pipe(child.stdin);
-
-		}, Math.round(Math.random() * 1000));
+		const options = { stdio: ["pipe", process.stdout, process.stderr] }; // share STD interface with this parent process
+		const child = childProcess.spawn(BINARY, JSON.parse(ARGS), options);
+		const client = net.connect(SOURCE_PORT, SOURCE_HOST, () => {
+			// console.log("client connected!")
+		});
+		client.setTimeout(10 * 1000, () => {
+			console.error("tcp connection timed out");
+			process.exit(0);
+		});
+		client.on("error", (error) => console.error("client error:", error));
+		client.pipe(child.stdin);
 
 		break;
 	}

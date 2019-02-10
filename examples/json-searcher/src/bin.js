@@ -12,7 +12,7 @@ process.stdin.on("readable", () => {
 
 		units.forEach(unit => {
 			try {
-				const line = JSON.parse(unit);
+				// const line = JSON.parse(unit);
 				acc++;
 			}
 			catch (e) {

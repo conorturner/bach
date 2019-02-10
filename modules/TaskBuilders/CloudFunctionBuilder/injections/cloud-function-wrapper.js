@@ -18,7 +18,8 @@ exports.invoke = event => {
 				try {
 					const options = { stdio: ["pipe", process.stdout, process.stderr] }; // share STD interface with this parent process
 					const child = childProcess.spawn(BINARY, ARGS, options);
-					const client = net.connect(SOURCE_PORT, SOURCE_HOST, () => console.log("client connected!"));
+					console.time("client connected");
+					const client = net.connect(SOURCE_PORT, SOURCE_HOST, () => console.timeEnd("client connected"));
 					client.setTimeout(10 * 1000, () => {
 						console.error("tcp connection timed out");
 						client.end();

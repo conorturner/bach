@@ -21,7 +21,7 @@ class StreamCluster {
 		});
 		this.loadBalancer.open()
 			.then(() => {
-				console.log("piping into load balancer")
+				console.log("piping into load balancer");
 				inputStream.pipe(this.split("\n")).pipe(this.loadBalancer);
 			})
 			.catch(err => {
