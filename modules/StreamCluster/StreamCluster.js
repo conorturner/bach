@@ -58,8 +58,7 @@ class StreamCluster {
 
 		const address = loadBalancer.server.address();
 		if (address) add(address);
-		else loadBalancer.server.once("listening", () =>
-			add(loadBalancer.server.address()));
+		else loadBalancer.server.once("listening", () => add(loadBalancer.server.address()));
 	}
 
 }

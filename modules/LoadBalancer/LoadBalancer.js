@@ -16,6 +16,7 @@ class LoadBalancer extends Writable {
 			});
 
 		this.server.on("connection", (socket) => {
+			console.log("socket connected");
 			socket.on("error", (error) => console.log("socket error", error));
 			this.sockets.push(socket);
 			this.emit("socket", socket);
