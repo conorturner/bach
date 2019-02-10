@@ -31,18 +31,25 @@ class StreamCluster {
 	}
 
 	addNode() {
-		const { loadBalancer, bachfile, target, callbackAddress } = this;
-		const { port } = loadBalancer.server.address();
+		const add = (address) => {
+			const { port } = address;
 
-		const env = {
-			INPUT_TYPE: "tcp",
-			BINARY: bachfile.binary,
-			ARGS: target === "local" ? JSON.stringify(bachfile.args) : bachfile.args,
-			SOURCE_HOST: callbackAddress,
-			SOURCE_PORT: port
+			const env = {
+				INPUT_TYPE: "tcp",
+				BINARY: bachfile.binary,
+				ARGS: target === "local" ? JSON.stringify(bachfile.args) : bachfile.args,
+				SOURCE_HOST: callbackAddress,
+				SOURCE_PORT: port
+			};
+
+			this.nodes.push(this.task.run({ bachfile, env, target }));
 		};
 
-		this.nodes.push(this.task.run({ bachfile, env, target }));
+		const { loadBalancer, bachfile, target, callbackAddress } = this;
+		const address = loadBalancer.server.address();
+		if (address) add(address);
+		else loadBalancer.server.once("listening", () =>
+			add(loadBalancer.server.address()));
 	}
 
 }
