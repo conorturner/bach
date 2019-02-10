@@ -9,6 +9,7 @@ class DockerBuilder extends TaskBuilder {
 	build(bachfile) {
 		this.inject(`${__dirname}/injections/docker-wrapper.js`, "/build/.docker-wrapper.js");
 		this.inject(`${__dirname}/injections/.node11.Dockerfile`, "/build/.temp.Dockerfile");
+		this.copySrc("build/");
 
 		const tag = `bach-${bachfile["logical-name"]}`;
 		return this.docker.build({ tag, workdir: `${this.path}/build`, file: ".temp.Dockerfile" });

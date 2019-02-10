@@ -23,7 +23,7 @@ program
 	.option("--ip <ip>", "host ip")
 	.option("-s, --scan", "should the range of resources be scanned")
 	.action((cmd) => {
-		const { target, partition = "1", ip } = cmd;
+		const { target = "local", partition = "1", ip } = cmd;
 		const path = process.cwd();
 		const bachfile = require(`${path}/bachfile.json`);
 		console.log(bachfile);

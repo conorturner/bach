@@ -16,13 +16,22 @@ class StreamCluster {
 	}
 
 	pipeInputStream(inputStream) {
+		this.loadBalancer.on("error", (err) => {
+			console.error("loadBalancer error", err);
+		});
 		this.loadBalancer.open()
 			.then(() => {
+				console.log("piping into load balancer")
 				inputStream.pipe(this.split("\n")).pipe(this.loadBalancer);
 			})
 			.catch(err => {
 				throw err;
 			});
+
+		return new Promise(resolve => this.loadBalancer.on("close", () => {
+			console.log("close");
+			resolve();
+		}));
 	}
 
 	setDesiredNodes(desiredNodes) {
@@ -31,6 +40,8 @@ class StreamCluster {
 	}
 
 	addNode() {
+		const { loadBalancer, bachfile, target, callbackAddress } = this;
+
 		const add = (address) => {
 			const { port } = address;
 
@@ -45,7 +56,6 @@ class StreamCluster {
 			this.nodes.push(this.task.run({ bachfile, env, target }));
 		};
 
-		const { loadBalancer, bachfile, target, callbackAddress } = this;
 		const address = loadBalancer.server.address();
 		if (address) add(address);
 		else loadBalancer.server.once("listening", () =>

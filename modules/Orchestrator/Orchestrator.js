@@ -52,9 +52,7 @@ class Orchestrator {
 
 		const streamCluster = new StreamCluster({ target, bachfile, callbackAddress: ip });
 		streamCluster.setDesiredNodes(partition);
-		streamCluster.pipeInputStream(inputStream);
-
-		return new Promise(resolve => streamCluster.loadBalancer.on("close", resolve));
+		return streamCluster.pipeInputStream(inputStream);
 	}
 }
 
