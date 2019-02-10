@@ -23,6 +23,10 @@ Stream input
 ```bash
 $ curl -s https://storage.googleapis.com/public-stuff/citylots.features.dat | bach task-run -p 8
 ```
+This command will run the containers on xx.56 while telling them to call back to xx.10 for data streams
+```bash
+$ DOCKER_HOST=tcp://192.168.0.56 bash -c 'bach task-build && head -n 10000000 GDELT.dat | bach task-run -p 4 --ip 192.168.0.10'
+```
 
 
 ## Task Definitions
@@ -61,7 +65,7 @@ $ curl -s https://storage.googleapis.com/public-stuff/citylots.features.dat | ba
 - Data will be streamed into the program and the output of its mapping operation will be streamed to stdout.
 - Data sent to stderr will cause abnormal termination (ability to turn this off).
 - If a mapper type task is interrupted it will be restarted from start of the current chunk, meaning outputs must be push to stdout only when a chunk is complete, external state could be maintained.
-- When streaming a tcp connection will be made from child nodes to parent to carry both up and down stream data 
+- When streaming a tcp connection will be made from child nodes to parent to carry both up and down stream data
 
 ## Co-location of data
 
