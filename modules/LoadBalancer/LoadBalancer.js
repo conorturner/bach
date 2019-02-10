@@ -21,12 +21,6 @@ class LoadBalancer extends Writable {
 			this.sockets.push({ writable: true, socket });
 			this.emit("socket", socket);
 		});
-
-		return new Promise(resolve => this.server.listen(() => {
-			require("dns").lookup(require("os").hostname(), (err, add, fam) => {
-				resolve({ server: this.server, localIp: add });
-			});
-		}));
 	}
 
 	_write(chunk, encoding, callback) { // chunks should be tuples
