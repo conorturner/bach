@@ -6,9 +6,6 @@ class LoadBalancer extends Writable {
 
 		this.net = net;
 		this.sockets = [];
-	}
-
-	open() {
 		//TODO: option to specify port
 		this.server = this.net
 			.createServer()
@@ -21,6 +18,10 @@ class LoadBalancer extends Writable {
 			this.sockets.push({ writable: true, socket });
 			this.emit("socket", socket);
 		});
+	}
+
+	open() {
+
 
 		return new Promise(resolve => this.server.listen(resolve));
 	}
