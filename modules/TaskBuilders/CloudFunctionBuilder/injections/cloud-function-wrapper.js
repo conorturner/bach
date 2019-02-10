@@ -27,7 +27,8 @@ exports.invoke = event => {
 					client.pipe(child.stdin);
 
 					child.on("close", (code) => {
-						console.log(code);
+						console.log("child closed:", code);
+						client.end();
 						resolve(null);
 					});
 					child.on("error", (code) => {

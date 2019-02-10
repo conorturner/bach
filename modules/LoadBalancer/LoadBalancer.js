@@ -75,8 +75,10 @@ class LoadBalancer extends Writable {
 	}
 
 	_final(callback) {
+		console.log("_final(callback)");
+
 		// this is called when input pipe has finished - NOT when the tcp pipes are done
-		this.sockets.forEach(socket => socket.end(null)); // send end of stream to tasks
+		this.sockets.forEach(socket => socket.end()); // send end of stream to tasks
 
 		Promise.all(this.sockets.map(socket => new Promise(r => socket.on("close", r))))
 			.then(() => {

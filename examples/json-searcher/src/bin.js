@@ -19,6 +19,7 @@ process.stdin.on("readable", () => {
 				errors.push(e);
 				console.log(unit)
 				console.log("error", e);
+				process.exit(1);
 			}
 		});
 
@@ -27,7 +28,7 @@ process.stdin.on("readable", () => {
 
 process.stdin.on("end", () => {
 	// console.log(Object.keys(acc).reduce((map, el) => Object.assign(map, { [el]: acc[el].length }), {}));
-	// console.log("count", acc);
+	console.log("count", acc);
 	// console.log(errors);
 	console.log("task ended");
 	process.exit(0);
