@@ -7,7 +7,6 @@ class StreamCluster {
 	constructor({ target, bachfile, callbackAddress }, { task = new Task(), loadBalancer = new LoadBalancer({}), split = require("binary-split") } = {}) {
 		this.task = task;
 		this.loadBalancer = loadBalancer;
-		loadBalancer.open();
 		this.split = split;
 
 		this.bachfile = bachfile;
@@ -17,7 +16,13 @@ class StreamCluster {
 	}
 
 	pipeInputStream(inputStream) {
-		inputStream.pipe(this.split("\n")).pipe(this.loadBalancer);
+		this.loadBalancer.open()
+			.then(() => {
+				inputStream.pipe(this.split("\n")).pipe(this.loadBalancer);
+			})
+			.catch(err => {
+				throw err;
+			});
 	}
 
 	setDesiredNodes(desiredNodes) {

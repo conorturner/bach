@@ -21,6 +21,8 @@ class LoadBalancer extends Writable {
 			this.sockets.push({ writable: true, socket });
 			this.emit("socket", socket);
 		});
+
+		return new Promise(resolve => this.server.listen(resolve));
 	}
 
 	_write(chunk, encoding, callback) { // chunks should be tuples
