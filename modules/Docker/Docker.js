@@ -1,30 +1,44 @@
 class Docker {
 
-	constructor({ childProcess = require("child_process") } = {}) {
+	constructor({ request = require("request-promise-native"), childProcess = require("child_process") } = {}) {
 		this.childProcess = childProcess;
+		this.request = request;
 	}
 
 	run({ tag, env, inputStream, cpu, entry, entryArgs }) {
-		// const envArgs = Object.keys(env).map(key => `-e ${key}='${JSON.stringify(env[key])}'`);
-		const envArgs = Object.keys(env).reduce((acc, key) => acc.concat(["-e", `${key}=${env[key]}`]), []);
 
-		const args = [
-			"run",
-			"--entrypoint", entry,
-			...envArgs,
-			"-i",
-			`--cpu-quota=${cpu.min * 100000}`,
-			// "--memory", "60m",
-			tag,
-			...entryArgs
-		];
+		const create = () => {
+			const options = {
+				method: "POST",
+				url: "http://strider.local:2375/v1.24/containers/create",
+				body: {
+					Image: tag,
+					Env: Object.keys(env).map(key => `${key}=${env[key]}`),
+					// name: tag,
+					AttachStdout: true,
+					AttachStdin: true,
+					AttachStderr: true,
+					Cmd: [entry, ...entryArgs]
+				},
+				json: true
+			};
 
-		const options = { stdio: ["pipe", process.stdout, process.stderr] };
-		const child = this.childProcess.spawn("docker", args, options);
+			return this.request(options);
+		};
 
-		if (inputStream) inputStream.pipe(child.stdin);
+		const start = ({ Id, Warnings }) => {
+			if (Warnings) return Promise.reject(Warnings);
+			console.log("started:", Id);
 
-		return child;
+			const options = {
+				method: "POST",
+				url: `http://strider.local:2375/v1.24/containers/${Id}/start`
+			};
+
+			return this.request(options);
+		};
+
+		return create().then(start);
 	}
 
 	build({ tag, file, workdir }) {

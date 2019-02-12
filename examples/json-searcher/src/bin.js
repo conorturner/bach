@@ -28,8 +28,8 @@ process.stdin.on("readable", () => {
 
 process.stdin.on("end", () => {
 	// console.log(Object.keys(acc).reduce((map, el) => Object.assign(map, { [el]: acc[el].length }), {}));
-	console.log("count", acc);
+	// console.log("count", acc);
 	// console.log(errors);
-	console.log("task ended");
+	// console.log("task ended");
 	process.exit(0);
 });

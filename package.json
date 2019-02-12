@@ -29,6 +29,7 @@
     "commander": "^2.19.0",
     "figlet": "^1.2.1",
     "inquirer": "^6.2.1",
+    "node-docker-api": "^1.1.22",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.5",
     "shelljs": "^0.8.3"

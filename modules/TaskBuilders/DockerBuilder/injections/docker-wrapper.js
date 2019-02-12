@@ -1,6 +1,5 @@
 const childProcess = require("child_process");
 const net = require("net");
-
 const { INPUT_TYPE, BINARY, ARGS, SOURCE_HOST, SOURCE_PORT } = process.env;
 
 switch (INPUT_TYPE) {
@@ -29,9 +28,12 @@ switch (INPUT_TYPE) {
 		});
 		client.setTimeout(10 * 1000, () => {
 			console.error("tcp connection timed out");
-			process.exit(0);
+			process.exit(1);
 		});
-		client.on("error", (error) => console.error("client error:", error));
+		client.on("error", (error) => {
+			console.error("client error:", error);
+			process.exit(1);
+		});
 		client.pipe(child.stdin);
 
 		break;

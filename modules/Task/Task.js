@@ -44,7 +44,7 @@ class Task {
 			case "local": {
 
 				return this.docker.run({
-					tag: `bach-${ bachfile["logical-name"] }`,
+					tag: `bach-${ bachfile["logical-name"] }:latest`,
 					cpu: bachfile.hardware.cpu,
 					env,
 					entry: "node",
