@@ -3,7 +3,7 @@ const split = require("binary-split");
 
 class LoadBalancerWorker extends Writable {
 	constructor({ net = require("net") } = {}) {
-		super({ highWaterMark: 2e6 });
+		super({ highWaterMark: 10e6 });
 
 		this.roundRobin = 0;
 		this.net = net;
@@ -40,13 +40,15 @@ class LoadBalancerWorker extends Writable {
 
 	writeChunk({ socket, chunk, encoding, callback }) {
 		try {
-			const ok = socket.write(Buffer.concat([chunk, Buffer.from("\n")]), encoding, callback);
+			const ok = socket.write(Buffer.concat([chunk, Buffer.from("\n")]), encoding);
 			if (!ok) socket.once("drain", () => this.emit("socketDrain", socket));
+			callback();
 		}
 		catch (e) {
 			console.log(socket._writableState);
 			console.log("write error");
 		}
+
 	}
 
 	awaitWritableSocket() { // this is probably over complex and covers edge cases which do not exists
@@ -101,10 +103,9 @@ class LoadBalancerWorker extends Writable {
 }
 
 if (require.main === module) {
-	console.log(`Worker ${process.pid} started.`);
+	console.log(`Worker ${ process.pid } started.`);
 	const lb = new LoadBalancerWorker();
 	lb.listen();
 	process.stdin.pipe(split("\n")).pipe(lb);
-}
-else module.exports = LoadBalancerWorker;
+} else module.exports = LoadBalancerWorker;
 

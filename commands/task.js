@@ -34,6 +34,8 @@ program
 		if (cmd.data) options.dataUri = `${path}/${cmd.data}`;
 		if (!process.stdin.isTTY) options.inputStream = process.stdin;
 
+		options.inputStream = localStorage.getReadStream("/Users/conor/projects/bach/examples/json-searcher/GDELT.dat");
+
 		console.time(`${partition} tiles`);
 		return orchestrator.run(bachfile, options)
 			.then(result => {

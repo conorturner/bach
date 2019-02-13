@@ -4,7 +4,7 @@ const start = Date.now();
 
 class LoadBalancer extends Writable {
 	constructor(options = {}, { cluster = require("cluster") } = {}) {
-		super({ highWaterMark: 16e6 });
+		super({ highWaterMark: 32e6 });
 
 		cluster.setupMaster({
 			exec: __dirname + "/modules/LoadBalancerWorker/LoadBalancerWorker.js",
@@ -49,8 +49,9 @@ class LoadBalancer extends Writable {
 			const buffer = Buffer.concat([this.remainder, chunk.slice(0, index)]);
 			this.remainder = chunk.slice(index + delimiter.length, chunk.length); // maintain remainder
 
-			const ok = worker.process.stdin.write(buffer, encoding, callback);
+			const ok = worker.process.stdin.write(buffer, encoding);
 			if (!ok) worker.process.stdin.once("drain", () => this.emit("workerDrain", worker));
+			callback();
 		}
 		catch (e) {
 			console.log(worker._writableState);
@@ -60,8 +61,8 @@ class LoadBalancer extends Writable {
 	}
 
 	awaitWritableWorker() { // this is probably over complex and covers edge cases which do not exists
-		const waitForEvent = (event) => new Promise((resolve, reject) => {
-			const timeout = setTimeout(reject, 3 * 60 * 1000);
+		const waitOnce = (event) => new Promise((resolve, reject) => {
+			const timeout = setTimeout(reject, 2 * 60 * 1000);
 			this.once(event, () => {
 				clearTimeout(timeout);
 				this.awaitWritableWorker().then(resolve).catch(reject);
@@ -70,9 +71,9 @@ class LoadBalancer extends Writable {
 
 		const writableWorker = this.getNextWorker();
 
-		if (writableWorker) return Promise.resolve(writableWorker); // back pressure load balancing
-		else if (this.workers.length !== 0) return waitForEvent("workerDrain"); // if there are some sockets
-		else return waitForEvent("workerOpen");
+		if (writableWorker) return Promise.resolve(writableWorker); // if worker is free return it
+		else if (this.workers.length !== 0) return waitOnce("workerDrain"); // if there are some workers but everyone needs to drain
+		else return waitOnce("workerOpen"); // No workers yet, wait for one to open
 	}
 
 	getNextWorker() {
