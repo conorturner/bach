@@ -8,6 +8,7 @@ class LoadBalancerWorker extends Writable {
 		this.roundRobin = 0;
 		this.net = net;
 		this.sockets = [];
+		this.acceptConnections = true;
 		//TODO: option to specify port
 		this.server = this.net
 			.createServer()
@@ -17,6 +18,7 @@ class LoadBalancerWorker extends Writable {
 			});
 
 		this.server.on("connection", (socket) => {
+			if (!this.acceptConnections) return;
 			console.log("socket connected");
 			socket.on("error", (error) => console.log("socket error", error));
 			this.sockets.push(socket);
@@ -83,6 +85,7 @@ class LoadBalancerWorker extends Writable {
 
 	_final(callback) {
 		console.log("LoadBalancerWorker._final(callback)");
+		this.acceptConnections = false;
 		// this is called when input pipe has finished - NOT when the tcp pipes are done
 		this.sockets.forEach(socket => socket.end()); // send end of stream to tasks
 		Promise.all(this.sockets.map(socket => new Promise(r => socket.on("close", r))))
