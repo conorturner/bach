@@ -4,7 +4,7 @@ const LoadBalancer = require("../LoadBalancer/LoadBalancer");
 
 class StreamCluster {
 
-	constructor({ target, bachfile, callbackAddress }, { task = new Task(), loadBalancer = new LoadBalancer({ nWorkers: 4 }) } = {}) {
+	constructor({ target, bachfile, callbackAddress }, { task = new Task(), loadBalancer = new LoadBalancer({ }) } = {}) {
 		this.task = task;
 		this.loadBalancer = loadBalancer;
 
