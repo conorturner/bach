@@ -1,9 +1,10 @@
 const { Writable } = require("stream");
 const os = require("os");
+const start = Date.now();
 
 class LoadBalancer extends Writable {
 	constructor(options = {}, { cluster = require("cluster") } = {}) {
-		super({ highWaterMark: 4e6 });
+		super({ highWaterMark: 16e6 });
 
 		cluster.setupMaster({
 			exec: __dirname + "/modules/LoadBalancerWorker/LoadBalancerWorker.js",
@@ -29,8 +30,8 @@ class LoadBalancer extends Writable {
 	}
 
 	_write(chunk, encoding, callback) { // chunks are sections binary streams of tuples
-		//TODO: this needs to hold the end of the buffer back to guarantee completeness of chunks
-		this.bytesProxied += chunk.length;
+		this.bytesProxied += chunk.length; // count total just for reporting purposes
+
 		this.awaitWritableWorker()
 			.then((worker) => {
 				this.writeChunk({ worker, chunk, encoding, callback });
@@ -46,7 +47,7 @@ class LoadBalancer extends Writable {
 		try {
 			const index = chunk.lastIndexOf(delimiter);
 			const buffer = Buffer.concat([this.remainder, chunk.slice(0, index)]);
-			this.remainder = chunk.slice(index + delimiter.length, chunk.length);
+			this.remainder = chunk.slice(index + delimiter.length, chunk.length); // maintain remainder
 
 			const ok = worker.process.stdin.write(buffer, encoding, callback);
 			if (!ok) worker.process.stdin.once("drain", () => this.emit("workerDrain", worker));
@@ -93,7 +94,8 @@ class LoadBalancer extends Writable {
 		Promise.all(this.workers.map(worker => new Promise(resolve => worker.on("exit", resolve))))
 			.then(() => {
 				console.log("workers closed");
-				console.log(this.bytesProxied / 1e6);
+				const diff = Date.now() - start;
+				console.log(`${Math.round(((this.bytesProxied / 1e6)*8*1000)/diff)} mb/s`);
 				this.emit("close");
 				callback();
 			})

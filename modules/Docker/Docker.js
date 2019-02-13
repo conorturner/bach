@@ -1,8 +1,16 @@
+/* eslint-disable indent */
 class Docker {
 
-	constructor({ request = require("request-promise-native"), childProcess = require("child_process") } = {}) {
-		this.childProcess = childProcess;
+	constructor({
+					request = require("request-promise-native"),
+					childProcess = require("child_process"),
+					tar = require("tar-fs"),
+					http = require("http")
+				} = {}) {
+
 		this.request = request;
+		this.tar = tar;
+		this.http = http;
 	}
 
 	run({ tag, env, inputStream, cpu, entry, entryArgs }) {
@@ -42,11 +50,29 @@ class Docker {
 	}
 
 	build({ tag, file, workdir }) {
-		const cmd = `docker build -f ${workdir}/${file} -t ${tag} ${workdir}`;
+		const tarStream = this.tar.pack(`${workdir}`);
 
-		return new Promise((resolve, reject) => {
-			this.childProcess.exec(cmd, (error, stdout, stderr) =>
-				error ? reject(error) : resolve({ stdout, stderr }));
+		const options = {
+			hostname: "strider.local",
+			port: 2375,
+			path: "/v1.24/build",
+			method: "POST",
+			headers: {
+				"Content-Type": "application/x-tar"
+			}
+		};
+
+		return new Promise(resolve => {
+			const req = this.http.request(options, (res) => {
+				console.log(`STATUS: ${res.statusCode}`);
+				console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+				res.pipe(process.stdout);
+				res.on("close", () => resolve());
+			});
+
+			req.on("error", (e) => console.error(`problem with request: ${e.message}`));
+
+			tarStream.pipe(req);
 		});
 	}
 
