@@ -45,7 +45,7 @@ class LoadBalancer extends Writable {
 	}
 
 	writeChunk({ worker, chunk, encoding, callback }) {
-		const delimiter = Buffer.from("\n");
+		const delimiter = Buffer.from("\n"); // TODO: make this a parameter
 
 		try {
 			const index = chunk.lastIndexOf(delimiter);

@@ -1,5 +1,4 @@
 const { Writable } = require("stream");
-const split = require("binary-split");
 
 class LoadBalancerWorker extends Writable {
 	constructor({ net = require("net") } = {}) {
@@ -24,6 +23,7 @@ class LoadBalancerWorker extends Writable {
 			this.emit("socket", socket);
 			process.send({ event: "socketOpen", pid: process.pid });
 		});
+		this.remainder = Buffer.alloc(0);
 	}
 
 	listen() {
@@ -41,8 +41,14 @@ class LoadBalancerWorker extends Writable {
 	}
 
 	writeChunk({ socket, chunk, encoding, callback }) {
+		const delimiter = Buffer.from("\n"); // TODO: make this a parameter
+
 		try {
-			const ok = socket.write(Buffer.concat([chunk, Buffer.from("\n")]), encoding);
+			const index = chunk.lastIndexOf(delimiter);
+			const buffer = Buffer.concat([this.remainder, chunk.slice(0, index)]);
+			this.remainder = chunk.slice(index + delimiter.length, chunk.length); // maintain remainder
+
+			const ok = socket.write(buffer, encoding);
 			if (!ok) socket.once("drain", () => this.emit("socketDrain", socket));
 			callback();
 		}
@@ -108,7 +114,7 @@ if (require.main === module) {
 	console.log(`Worker ${ process.pid } started.`);
 	const lb = new LoadBalancerWorker();
 	lb.listen();
-	process.stdin.pipe(split("\n")).pipe(lb);
+	process.stdin.pipe(lb);
 }
 else module.exports = LoadBalancerWorker;
 
