@@ -4,7 +4,7 @@ const start = Date.now();
 
 class LoadBalancer extends Writable {
 	constructor(options = {}, { cluster = require("cluster") } = {}) {
-		super({ highWaterMark: 32e6 });
+		super();
 
 		cluster.setupMaster({
 			exec: __dirname + "/modules/LoadBalancerWorker/LoadBalancerWorker.js",
@@ -12,7 +12,7 @@ class LoadBalancer extends Writable {
 		});
 
 		const {
-			nWorkers = os.cpus().length,
+			nWorkers = os.cpus().length, // default to number of logical processors
 			PORT = 9001
 		} = options;
 
@@ -21,11 +21,14 @@ class LoadBalancer extends Writable {
 			worker.on("message", (message) => this.handleWorkerMessage(message));
 		});
 
+		// this.on("socketOpen", () => console.log("socketOpen"));
+
 		this.PORT = PORT;
 		this.roundRobin = 0;
 		this.isListening = false;
 		this.workers = workers;
 		this.bytesProxied = 0;
+		this.nSockets = 0;
 		this.remainder = Buffer.alloc(0);
 	}
 
@@ -107,9 +110,18 @@ class LoadBalancer extends Writable {
 	}
 
 	handleWorkerMessage(message) {
-		if (message.event === "listening") {
-			this.isListening = true;
-			this.emit("listening");
+		switch (message.event) {
+			case "listening":{
+				this.isListening = true;
+				this.emit("listening");
+				break;
+			}
+			case "socketOpen":{
+				this.nSockets++;
+				this.emit("socketOpen");
+				console.log(`PID:${message.pid} - SOCKET:${this.nSockets}`);
+				break;
+			}
 		}
 	}
 }

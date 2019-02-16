@@ -24,27 +24,29 @@ class StreamCluster {
 	}
 
 	setDesiredNodes(desiredNodes) {
-		const delta = desiredNodes - this.nodes;
-		if (delta > 0) for (let i = 0; i < delta; i++) this.addNode();
+		const { loadBalancer } = this;
+
+		const set = () => {
+			const delta = desiredNodes - this.nodes;
+			if (delta > 0) for (let i = 0; i < delta; i++) this.addNode();
+		};
+
+		if (loadBalancer.isListening) set();
+		else loadBalancer.once("listening", () => set());
 	}
 
 	addNode() {
 		const { loadBalancer, bachfile, target, callbackAddress } = this;
 
-		const add = () => {
-			const env = {
-				INPUT_TYPE: "tcp",
-				BINARY: bachfile.binary,
-				ARGS: target === "local" ? JSON.stringify(bachfile.args) : bachfile.args,
-				SOURCE_HOST: callbackAddress,
-				SOURCE_PORT: loadBalancer.PORT
-			};
-
-			this.nodes.push(this.task.run({ bachfile, env, target }).catch(err => console.error(err)));
+		const env = {
+			INPUT_TYPE: "tcp",
+			BINARY: bachfile.binary,
+			ARGS: target === "local" ? JSON.stringify(bachfile.args) : bachfile.args,
+			SOURCE_HOST: callbackAddress,
+			SOURCE_PORT: loadBalancer.PORT
 		};
 
-		if (loadBalancer.isListening) add();
-		else loadBalancer.once("listening", () => add());
+		this.nodes.push(this.task.run({ bachfile, env, target }).catch(err => console.error(err)));
 	}
 
 }

@@ -3,7 +3,7 @@ const split = require("binary-split");
 
 class LoadBalancerWorker extends Writable {
 	constructor({ net = require("net") } = {}) {
-		super({ highWaterMark: 10e6 });
+		super();
 
 		this.roundRobin = 0;
 		this.net = net;
@@ -18,11 +18,11 @@ class LoadBalancerWorker extends Writable {
 			});
 
 		this.server.on("connection", (socket) => {
-			if (!this.acceptConnections) return;
-			console.log("socket connected");
+			if (!this.acceptConnections) return socket.close();
 			socket.on("error", (error) => console.log("socket error", error));
 			this.sockets.push(socket);
 			this.emit("socket", socket);
+			process.send({ event: "socketOpen", pid: process.pid });
 		});
 	}
 
@@ -84,13 +84,12 @@ class LoadBalancerWorker extends Writable {
 	}
 
 	_final(callback) {
-		console.log("LoadBalancerWorker._final(callback)");
-		this.acceptConnections = false;
-		// this is called when input pipe has finished - NOT when the tcp pipes are done
-		this.sockets.forEach(socket => socket.end()); // send end of stream to tasks
+		this.acceptConnections = false; // stop accepting connections before closing current
+		this.sockets.forEach(socket => socket.end()); // send end of stream to connections
+
 		Promise.all(this.sockets.map(socket => new Promise(r => socket.on("close", r))))
 			.then(() => {
-				console.log("sockets closed")
+				console.log(`PID:${process.pid} - CLOSE`);
 				this.close();
 				callback();
 			})
@@ -110,5 +109,6 @@ if (require.main === module) {
 	const lb = new LoadBalancerWorker();
 	lb.listen();
 	process.stdin.pipe(split("\n")).pipe(lb);
-} else module.exports = LoadBalancerWorker;
+}
+else module.exports = LoadBalancerWorker;
 

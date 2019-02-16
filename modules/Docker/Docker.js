@@ -44,7 +44,7 @@ class Docker {
 
 		const start = ({ Id, Warnings }) => {
 			if (Warnings) return Promise.reject(Warnings);
-			console.log("started:", Id);
+			// console.log("started:", Id);
 
 			const options = {
 				method: "POST",
