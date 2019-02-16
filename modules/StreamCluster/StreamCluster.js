@@ -4,7 +4,7 @@ const LoadBalancer = require("../LoadBalancer/LoadBalancer");
 
 class StreamCluster {
 
-	constructor({ target, bachfile, callbackAddress }, { task = new Task(), loadBalancer = new LoadBalancer({ }) } = {}) {
+	constructor({ target, bachfile, callbackAddress }, { task = new Task(), loadBalancer = new LoadBalancer({}) } = {}) {
 		this.task = task;
 		this.loadBalancer = loadBalancer;
 
@@ -40,7 +40,7 @@ class StreamCluster {
 				SOURCE_PORT: loadBalancer.PORT
 			};
 
-			this.nodes.push(this.task.run({ bachfile, env, target }));
+			this.nodes.push(this.task.run({ bachfile, env, target }).catch(err => console.error(err)));
 		};
 
 		if (loadBalancer.isListening) add();

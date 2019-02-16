@@ -6,12 +6,10 @@ const program = require("commander");
 
 // Classes
 const Task = require("../modules/Task/Task.js");
-const LocalStorage = require("../modules/Storage/LocalStorage/LocalStorage");
 const Orchestrator = require("../modules/Orchestrator/Orchestrator");
 
 // Instances
 const task = new Task();
-const localStorage = new LocalStorage();
 const orchestrator = new Orchestrator();
 
 // User Interface
@@ -25,14 +23,15 @@ program
 	.action((cmd) => {
 		const { target = "local", partition = "1", ip } = cmd;
 		const path = process.cwd();
-		const bachfile = require(`${path}/bachfile.json`);
+		const bachfile = task.readBachfile(path);
+		if (!bachfile) return console.log("Unable to find bachfile:", `${path}/bachfile.json`);
 		console.log(bachfile);
 
 		const type = (process.stdin.isTTY ? !cmd.data : true) ? cmd.data ? "block" : "stream" : "unknown"; // XOR baby
 		const options = { type, target, partition: parseInt(partition, 10), ip };
 		if (cmd.data && !process.stdin.isTTY) return console.log("Cannot specify both data and pipe input");
-		if (cmd.data) options.dataUri = `${path}/${cmd.data}`;
-		if (!process.stdin.isTTY) options.inputStream = process.stdin;
+		if (cmd.data) options.dataUri = `${path}/${cmd.data}`; // run workers in a map reduce style configuration (e.g. they go get their data from elsewhere)
+		if (!process.stdin.isTTY) options.inputStream = process.stdin; // stream stdin of this process into workers
 
 		console.time(`${partition} tiles`);
 		return orchestrator.run(bachfile, options)
@@ -40,8 +39,6 @@ program
 				console.timeEnd(`${partition} tiles`);
 			})
 			.catch(console.error);
-
-
 	});
 
 program

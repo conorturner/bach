@@ -21,12 +21,11 @@ $ cat citylots.features.dat | bach task-run -p 8
 ```
 Stream input
 ```bash
-$ curl -s https://storage.googleapis.com/public-stuff/citylots.features.dat | bach task-run -p 8
+$ curl -s https://storage.googleapis.com/public-stuff/GDELT.dat | bach task-run -p 8
 ```
 This command will build and run the containers on xx.56 while telling them to call back to xx.10 for data streams
 ```bash
-$ DOCKER_HOST=tcp://192.168.0.56 \
- bash -c 'bach task-build && head -n 10000000 GDELT.dat | bach task-run -p 4 --ip 192.168.0.10'
+bash -c 'bach task-build && head -n 10000000 GDELT.dat | bach task-run -p 4 --ip 192.168.0.10'
 ```
 ^ following link explains how to allow docker clients from remote connections
 https://docs.docker.com/install/linux/linux-postinstall/#configure-where-the-docker-daemon-listens-for-connections

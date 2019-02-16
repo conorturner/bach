@@ -13,8 +13,13 @@ class Task {
 	}
 
 	build({ target, path }) {
+		if (!path) throw new Error("Path must be provided to task build command");
+
 		const bachfile = this.readBachfile(path);
-		if (!path) return Promise.resolve();
+		if (!bachfile) {
+			console.log("unable to find bachfile in path:", path);
+			return Promise.resolve();
+		}
 
 		// Clean build folder.
 		this.childProcess.execSync(`rm -rf ${ path }/build`);
@@ -26,8 +31,9 @@ class Task {
 				return dockerBuilder.build(bachfile);
 			}
 			case "lambda": {
-				const lambdaBuilder = new LambdaBuilder({ path });
-				return lambdaBuilder.build(bachfile);
+				throw new Error("not implemented");
+				// const lambdaBuilder = new LambdaBuilder({ path });
+				// return lambdaBuilder.build(bachfile);
 			}
 			case "gcf": {
 				const cloudFunctionBuilder = new CloudFunctionBuilder({ path });
@@ -42,10 +48,12 @@ class Task {
 	run({ bachfile, target = "local", inputStream, env }) { // TODO: add output stream
 		switch (target) {
 			case "local": {
+				const { cpu, memory } = bachfile.hardware;
 
 				return this.docker.run({
 					tag: `bach-${ bachfile["logical-name"] }:latest`,
-					cpu: bachfile.hardware.cpu,
+					cpu,
+					memory,
 					env,
 					entry: "node",
 					entryArgs: [".docker-wrapper.js"],
@@ -53,7 +61,10 @@ class Task {
 				});
 			}
 			case "gcf": {
-				return this.googleCloud.sendPubSubMessage({ name: `bach-${ bachfile["logical-name"] }-start-child`, message: env })
+				return this.googleCloud.sendPubSubMessage({
+					name: `bach-${ bachfile["logical-name"] }-start-child`,
+					message: env
+				})
 					.catch(console.error);
 			}
 
@@ -64,8 +75,13 @@ class Task {
 	}
 
 	deploy({ path }) {
+		if (!path) throw new Error("Path must be provided to task build command");
+
 		const bachfile = this.readBachfile(path);
-		if (!path) return Promise.resolve();
+		if (!bachfile) {
+			console.log("unable to find bachfile in path:", path);
+			return Promise.resolve();
+		}
 
 		const cloudFunctionBuilder = new CloudFunctionBuilder({ path });
 		return cloudFunctionBuilder.deploy(bachfile);
@@ -73,11 +89,11 @@ class Task {
 
 	readBachfile(path) {
 		try {
-			return JSON.parse(this.childProcess.execSync(`cat ${ path }/bachfile.json`));
+			return require(`${ path }/bachfile.json`);
 
 		}
 		catch (e) {
-			console.error("error getting bachfile", e);
+			// console.error("error getting bachfile", e);
 		}
 	}
 

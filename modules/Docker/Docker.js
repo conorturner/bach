@@ -15,7 +15,7 @@ class Docker {
 		this.split = split;
 	}
 
-	run({ tag, env, inputStream, cpu, entry, entryArgs }) {
+	run({ tag, env, inputStream, cpu, memory, entry, entryArgs }) {
 
 		const create = () => {
 			const options = {
@@ -28,7 +28,13 @@ class Docker {
 					AttachStdout: true,
 					AttachStdin: true,
 					AttachStderr: true,
-					Cmd: [entry, ...entryArgs]
+					Cmd: [entry, ...entryArgs],
+					HostConfig: {
+						CpuQuota: 100000 * cpu.max,
+						CpuPeriod: 100000,
+						Memory: memory.max * 1e6,
+						MemorySwap: -1 // unlimited swap
+					}
 				},
 				json: true
 			};
