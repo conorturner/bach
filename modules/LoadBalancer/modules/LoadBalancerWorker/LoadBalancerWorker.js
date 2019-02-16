@@ -17,7 +17,7 @@ class LoadBalancerWorker extends Writable {
 			});
 
 		this.server.on("connection", (socket) => {
-			if (!this.acceptConnections) return socket.close();
+			if (!this.acceptConnections) return socket.end();
 			socket.on("error", (error) => console.log("socket error", error));
 			this.sockets.push(socket);
 			this.emit("socket", socket);
