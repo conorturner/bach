@@ -9,7 +9,7 @@
   "hardware": {
     "cpu": {
       "min": 0.1,
-      "max": 1
+      "max": 2
     },
     "memory": {
       "min": 128,

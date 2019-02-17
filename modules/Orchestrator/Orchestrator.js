@@ -47,10 +47,10 @@ class Orchestrator {
 			}));
 	}
 
-	runStreamProcessor(bachfile, { inputStream, partition, target, ip }) {
+	runStreamProcessor(bachfile, { inputStream, partition, target, ip, lb }) {
 		// TODO: if partition is set to 'auto' - scale partitions up and down based on input buffer length/some other constraint
 
-		const streamCluster = new StreamCluster({ target, bachfile, callbackAddress: ip });
+		const streamCluster = new StreamCluster({ target, bachfile, callbackAddress: ip, nWorkers: lb });
 		streamCluster.setDesiredNodes(partition);
 		return streamCluster.pipeInputStream(inputStream);
 	}

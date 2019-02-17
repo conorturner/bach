@@ -63,7 +63,7 @@ class Docker {
 		const options = {
 			hostname: "strider.local",
 			port: 2375,
-			path: "/v1.24/build",
+			path: `/v1.24/build?t=${tag}`,
 			method: "POST",
 			headers: {
 				"Content-Type": "application/x-tar"

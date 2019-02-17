@@ -1,11 +1,12 @@
 const { Writable } = require("stream");
 
 class LoadBalancerWorker extends Writable {
-	constructor({ net = require("net") } = {}) {
+	constructor({ net = require("net"), zlib = require("zlib") } = {}) {
 		super();
 
 		this.roundRobin = 0;
 		this.net = net;
+		this.zlib = zlib;
 		this.sockets = [];
 		this.acceptConnections = true;
 		//TODO: option to specify port
@@ -19,6 +20,8 @@ class LoadBalancerWorker extends Writable {
 		this.server.on("connection", (socket) => {
 			if (!this.acceptConnections) return socket.end();
 			socket.on("error", (error) => console.log("socket error", error));
+			socket.pipe(process.stdout);
+
 			this.sockets.push(socket);
 			this.emit("socket", socket);
 			process.send({ event: "socketOpen", pid: process.pid });
@@ -27,7 +30,10 @@ class LoadBalancerWorker extends Writable {
 	}
 
 	listen() {
-		this.server.listen(process.env.PORT, () => process.send({ event: "listening" })); // port env var set at cluster.fork()
+		this.server.listen(process.env.PORT, () => {
+			console.error(`PID:${process.pid} - LISTEN`);
+			process.send({ event: "listening" });
+		});
 	}
 
 	_write(chunk, encoding, callback) { // chunks should be tuples
@@ -53,8 +59,8 @@ class LoadBalancerWorker extends Writable {
 			callback();
 		}
 		catch (e) {
-			console.log(socket._writableState);
-			console.log("write error");
+			console.error(socket._writableState);
+			console.error("write error");
 		}
 
 	}
@@ -78,10 +84,6 @@ class LoadBalancerWorker extends Writable {
 	getNextSocket() {
 		if (this.sockets.length === 0) return;
 
-		// this.roundRobin = (this.roundRobin + 1) % this.sockets.length;
-		// const { needDrain } = this.sockets[this.roundRobin]._writableState;
-		// if (!needDrain) return this.sockets[this.roundRobin];
-
 		for (let i = 0; i < this.sockets.length; i++) {
 			this.roundRobin = (this.roundRobin + 1) % this.sockets.length;
 			const { needDrain } = this.sockets[this.roundRobin]._writableState;
@@ -91,13 +93,13 @@ class LoadBalancerWorker extends Writable {
 
 	_final(callback) {
 		this.acceptConnections = false; // stop accepting connections before closing current
-		this.sockets.forEach(socket => socket.end()); // send end of stream to connections
+		// this.sockets.forEach(socket => socket.end()); // send end of stream to connections TODO: make this send some form of end delimiter to tell the client to close
 
 		Promise.all(this.sockets.map(socket => new Promise(r => socket.on("close", r))))
 			.then(() => {
-				console.log(`PID:${process.pid} - CLOSE`);
-				this.close();
+				console.error(`PID${process.pid} - CLOSE`);
 				callback();
+				this.close(callback);
 			})
 			.catch(err => {
 				console.error(err);
@@ -111,7 +113,7 @@ class LoadBalancerWorker extends Writable {
 }
 
 if (require.main === module) {
-	console.log(`Worker ${ process.pid } started.`);
+	process.stdout.setMaxListeners(64);
 	const lb = new LoadBalancerWorker();
 	lb.listen();
 	process.stdin.pipe(lb);

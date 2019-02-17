@@ -19,16 +19,19 @@ program
 	.option("-d, --data <data>", "Specify data source")
 	.option("-p, --partition <partition>", "How many partitions/shards should be used")
 	.option("--ip <ip>", "host ip")
+	.option("--lb <lb>", "number of load balancer processes")
 	.option("-s, --scan", "should the range of resources be scanned")
 	.action((cmd) => {
-		const { target = "local", partition = "1", ip } = cmd;
+		const { target = "local", partition = "1", ip, lb } = cmd;
 		const path = process.cwd();
 		const bachfile = task.readBachfile(path);
-		if (!bachfile) return console.log("Unable to find bachfile:", `${path}/bachfile.json`);
-		console.log(bachfile);
+		if (!bachfile) return console.error("Unable to find bachfile:", `${path}/bachfile.json`);
+		console.error(bachfile);
 
 		const type = (process.stdin.isTTY ? !cmd.data : true) ? cmd.data ? "block" : "stream" : "unknown"; // XOR baby
-		const options = { type, target, partition: parseInt(partition, 10), ip };
+
+		const options = { type, target, partition: parseInt(partition, 10), ip, lb: lb ? parseInt(lb, 10) : null };
+
 		if (cmd.data && !process.stdin.isTTY) return console.log("Cannot specify both data and pipe input");
 		if (cmd.data) options.dataUri = `${path}/${cmd.data}`; // run workers in a map reduce style configuration (e.g. they go get their data from elsewhere)
 		if (!process.stdin.isTTY) options.inputStream = process.stdin; // stream stdin of this process into workers
