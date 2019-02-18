@@ -1,7 +1,6 @@
 const inquirer = require("inquirer");
 const chalk = require("chalk");
 const figlet = require("figlet");
-const shell = require("shelljs");
 const program = require("commander");
 
 // Classes
@@ -27,12 +26,15 @@ program
 		if (!bachfile) return console.error("Unable to find bachfile:", `${path}/bachfile.json`);
 		console.error(bachfile);
 
-		const type = (process.stdin.isTTY ? !cmd.data : true) ? cmd.data ? "block" : "stream" : "unknown"; // XOR baby
+		let type;
+		if (!process.stdin.isTTY) type = "stream";
+		else if (cmd.data) type = "block";
+		else type = "unknown";
 
 		const options = { type, target, partition: parseInt(partition, 10), ip, lb: lb ? parseInt(lb, 10) : null };
 
 		if (cmd.data && !process.stdin.isTTY) return console.log("Cannot specify both data and pipe input");
-		if (cmd.data) options.dataUri = `${path}/${cmd.data}`; // run workers in a map reduce style configuration (e.g. they go get their data from elsewhere)
+		if (cmd.data) options.dataUri = cmd.data; // run workers in a map reduce style configuration (e.g. they go get their data from elsewhere)
 		if (!process.stdin.isTTY) options.inputStream = process.stdin; // stream stdin of this process into workers
 
 		console.time(`${partition} tiles`);
@@ -55,7 +57,7 @@ program
 		const task = new Task({ target, bachfile });
 
 		console.time("- build");
-		task.build({ path})
+		task.build({ path })
 			.then(result => console.timeEnd("- build"))
 			.catch(console.error);
 	});

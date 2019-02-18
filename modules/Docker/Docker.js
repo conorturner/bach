@@ -10,7 +10,7 @@ module.exports = ({ // Injectable dependencies
 
 	class Docker {
 
-		static run({ tag, env, inputStream, cpu, memory, entry, entryArgs }) {
+		static run({ tag, env, cpu, memory, entry, entryArgs }) {
 
 			const create = () => {
 				const options = {

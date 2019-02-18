@@ -4,7 +4,9 @@ module.exports = ({
 					  DockerBuilder = require("../TaskBuilders/DockerBuilder/DockerBuilder"),
 					  LambdaBuilder = require("../TaskBuilders/LambdaBuilder/LambdaBuilder"),
 					  CloudFunctionBuilder = require("../TaskBuilders/CloudFunctionBuilder/CloudFunctionBuilder"),
-					  childProcess = require("child_process")
+					  childProcess = require("child_process"),
+					  uuidv4 = require("uuid/v4")
+
 				  } = {}) => {
 
 	const googleCloud = new GoogleCloud();
@@ -17,6 +19,7 @@ module.exports = ({
 
 			this.bachfile = bachfile;
 			this.target = target;
+			this.uuid = uuidv4();
 		}
 
 		build({ path }) {
@@ -47,7 +50,7 @@ module.exports = ({
 			}
 		}
 
-		run({ inputStream, env }) { // TODO: add output stream
+		run({ env }) { // TODO: add output stream
 			switch (this.target) {
 				case "local": {
 					const { cpu, memory } = this.bachfile.hardware;
@@ -58,8 +61,7 @@ module.exports = ({
 						memory,
 						env,
 						entry: "node",
-						entryArgs: [".docker-wrapper.js"],
-						inputStream
+						entryArgs: [".docker-wrapper.js"]
 					});
 				}
 				case "gcf": {

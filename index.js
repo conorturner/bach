@@ -3,7 +3,6 @@
 const inquirer = require("inquirer");
 const chalk = require("chalk");
 const figlet = require("figlet");
-const shell = require("shelljs");
 const fs = require("fs");
 const program = require("commander");
 
@@ -35,12 +34,6 @@ const askQuestions = () => {
 		}
 	];
 	return inquirer.prompt(questions);
-};
-
-const createFile = (filename, extension) => {
-	const filePath = `${process.cwd()}/${filename}.${extension}`
-	shell.touch(filePath);
-	return filePath;
 };
 
 const success = filepath => {

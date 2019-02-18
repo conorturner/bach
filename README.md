@@ -30,6 +30,10 @@ bach task-build && head -n 10000000 GDELT.dat | bach task-run -p 4 --ip 192.168.
 ^ following link explains how to allow docker clients from remote connections
 https://docs.docker.com/install/linux/linux-postinstall/#configure-where-the-docker-daemon-listens-for-connections
 
+Run a map reduce style task
+```bash
+bach task-build && bach task-run --ip 192.168.0.10 --data https://storage.googleapis.com/gdelt-europe-west1/GDELT1MIL.DAT -p 4
+```
 
 ## Task Definitions
 
