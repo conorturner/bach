@@ -1,2 +1,5 @@
-citylots.json.dat is a subset of the database hosted at this repo https://github.com/zemirco/sf-city-lots-json/blob/master/citylots.json
-The data has been transmuted such that each 'feature' is a single line of JSON, each line is delimited by a single unix newline character.
+# GDELT Stream
+
+http://data.gdeltproject.org/events/GDELT.MASTERREDUCEDV2.1979-2013.zip
+
+The above datafile can be streamed into the system and be split on the newline character, simulating these world events as a stream.

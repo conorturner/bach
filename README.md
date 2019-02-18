@@ -25,7 +25,7 @@ $ curl -s https://storage.googleapis.com/public-stuff/GDELT.dat | bach task-run 
 ```
 This command will build and run the containers on xx.56 while telling them to call back to xx.10 for data streams
 ```bash
-bash -c 'bach task-build && head -n 10000000 GDELT.dat | bach task-run -p 4 --ip 192.168.0.10'
+bach task-build && head -n 10000000 GDELT.dat | bach task-run -p 4 --ip 192.168.0.10 --lb 4
 ```
 ^ following link explains how to allow docker clients from remote connections
 https://docs.docker.com/install/linux/linux-postinstall/#configure-where-the-docker-daemon-listens-for-connections
@@ -45,12 +45,12 @@ https://docs.docker.com/install/linux/linux-postinstall/#configure-where-the-doc
   "delimiter": "\n",
   "hardware": {
     "cpu": {
-      "min": 0.3,
-      "max": null
+      "min": 0.1,
+      "max": 2
     },
     "memory": {
       "min": 128,
-      "max": null
+      "max": 256
     },
     "disk": {
       "min": "1g"
@@ -59,7 +59,6 @@ https://docs.docker.com/install/linux/linux-postinstall/#configure-where-the-doc
     "network": null
   }
 }
-
 ```
 
 ## Program interface

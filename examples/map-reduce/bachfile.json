@@ -1,5 +1,5 @@
 {
-  "logical-name": "json-searcher",
+  "logical-name": "map-reduce",
   "interruptible": true,
   "binary": "node",
   "args": [

@@ -1,26 +1,20 @@
 const { Writable } = require("stream");
 
 class LoadBalancerWorker extends Writable {
-	constructor({ net = require("net"), zlib = require("zlib") } = {}) {
+	constructor({ net = require("net") } = {}) {
 		super();
 
 		this.roundRobin = 0;
 		this.net = net;
-		this.zlib = zlib;
 		this.sockets = [];
 		this.acceptConnections = true;
-		//TODO: option to specify port
 		this.server = this.net
 			.createServer()
-			.on("error", (err) => {
-				// handle errors here
-				console.log("server error", err);
-			});
+			.on("error", (err) => console.error("server error", err));
 
 		this.server.on("connection", (socket) => {
 			if (!this.acceptConnections) return socket.end();
 			socket.on("error", (error) => console.log("socket error", error));
-			socket.pipe(process.stdout);
 
 			this.sockets.push(socket);
 			this.emit("socket", socket);
@@ -93,7 +87,7 @@ class LoadBalancerWorker extends Writable {
 
 	_final(callback) {
 		this.acceptConnections = false; // stop accepting connections before closing current
-		// this.sockets.forEach(socket => socket.end()); // send end of stream to connections TODO: make this send some form of end delimiter to tell the client to close
+		this.sockets.forEach(socket => socket.end()); // send end of stream to connections TODO: make this send some form of end delimiter to tell the client to close
 
 		Promise.all(this.sockets.map(socket => new Promise(r => socket.on("close", r))))
 			.then(() => {
@@ -113,7 +107,6 @@ class LoadBalancerWorker extends Writable {
 }
 
 if (require.main === module) {
-	process.stdout.setMaxListeners(64);
 	const lb = new LoadBalancerWorker();
 	lb.listen();
 	process.stdin.pipe(lb);

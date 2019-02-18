@@ -5,11 +5,10 @@ const shell = require("shelljs");
 const program = require("commander");
 
 // Classes
-const Task = require("../modules/Task/Task.js");
+const Task = require("../modules/Task/Task.js")();
 const Orchestrator = require("../modules/Orchestrator/Orchestrator");
 
 // Instances
-const task = new Task();
 const orchestrator = new Orchestrator();
 
 // User Interface
@@ -24,7 +23,7 @@ program
 	.action((cmd) => {
 		const { target = "local", partition = "1", ip, lb } = cmd;
 		const path = process.cwd();
-		const bachfile = task.readBachfile(path);
+		const bachfile = Task.readBachfile(path);
 		if (!bachfile) return console.error("Unable to find bachfile:", `${path}/bachfile.json`);
 		console.error(bachfile);
 
@@ -46,26 +45,32 @@ program
 
 program
 	.command("task-build")
-	.option("-t, --target <target>", "Specify target docker|lambda")
+	.option("-t, --target <target>", "Specify target docker|gcf")
 	.action((cmd) => {
-		// console.log(process.cwd())
+		const path = process.cwd();
+		const bachfile = Task.readBachfile(path);
+		if (!bachfile) return console.error("Unable to find bachfile:", `${path}/bachfile.json`);
 		const { target = "docker" } = cmd;
 
+		const task = new Task({ target, bachfile });
+
 		console.time("- build");
-		task.build({ path: process.cwd(), target })
+		task.build({ path})
 			.then(result => console.timeEnd("- build"))
 			.catch(console.error);
 	});
 
 program
 	.command("task-deploy")
+	.option("-t, --target <target>", "Specify target docker|gcf")
 	.action((action, cmd) => {
-		// console.log(process.cwd())
 
-		console.time("- deploy");
-		task.deploy({ path: process.cwd(), target: null })
+		console.time("task-deploy");
+		const task = new Task({ target: null });
+
+		task.deploy({ path: process.cwd() })
 			.then(result => {
-				console.timeEnd("- deploy");
+				console.timeEnd("task-deploy");
 				// console.log(result.stdout);
 			})
 			.catch(console.error);

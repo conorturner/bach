@@ -1,12 +1,11 @@
 // Classes
-const Task = require("../Task/Task.js");
+const Task = require("../Task/Task.js")();
 const LocalStorage = require("../Storage/LocalStorage/LocalStorage");
 const StreamCluster = require("../StreamCluster/StreamCluster");
 
 class Orchestrator {
 
-	constructor({ task = new Task(), localStorage = new LocalStorage() } = {}) {
-		this.task = task;
+	constructor({ localStorage = new LocalStorage() } = {}) {
 		this.localStorage = localStorage;
 	}
 
@@ -34,8 +33,9 @@ class Orchestrator {
 			.then(({ readStreams, fd }) => Promise.all(readStreams.map((readStream, i) => {
 				console.time(`task ${ i } - ${ Math.round((readStream.end - readStream.start) / 1e6) }mb`);
 
+				const task = new Task({ bachfile, target: "docker" });
 				const env = { INPUT_TYPE: "stdin", BINARY: bachfile.binary, ARGS: JSON.stringify(bachfile.args) };
-				const child = this.task.run({ bachfile, inputStream: readStream, env });
+				const child = task.run({ bachfile, inputStream: readStream, env });
 
 				return new Promise(resolve => child.on("close", (code) => {
 					console.timeEnd(`task ${ i } - ${ Math.round((readStream.end - readStream.start) / 1e6) }mb`);

@@ -50,7 +50,7 @@ process.stdin.on("readable", () => {
 				dateObj.setHours(0, 0, 0, 0);
 				// console.log(acc,dateObj);
 
-				if (movingWindow.length !== WINDOW_SIZE) movingWindow.push({ Target, NumEvents, dateObj });
+				if (movingWindow.length < WINDOW_SIZE) movingWindow.push({ Target, NumEvents, dateObj });
 				else {
 
 					const sums = movingWindow // sum all events per target in the window
@@ -68,7 +68,7 @@ process.stdin.on("readable", () => {
 
 					const [first, second, third] = sortedByEvents;
 
-					console.log(JSON.stringify({ first, second, third, windowStart, windowEnd })); // write out as json stream
+					// console.log(JSON.stringify({ first, second, third, windowStart, windowEnd })); // write out as json stream
 
 					movingWindow.push({ Target, NumEvents, dateObj });
 					movingWindow.splice(0, 1);
@@ -87,6 +87,5 @@ process.stdin.on("readable", () => {
 });
 
 process.stdin.on("end", () => {
-	// console.log(remainder);
 	process.exit(0);
 });

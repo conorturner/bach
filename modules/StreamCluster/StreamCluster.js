@@ -1,11 +1,10 @@
 // Classes
-const Task = require("../Task/Task.js");
+const Task = require("../Task/Task.js")();
 const LoadBalancer = require("../LoadBalancer/LoadBalancer");
 
 class StreamCluster {
 
-	constructor({ target, bachfile, callbackAddress, nWorkers }, { task = new Task(), loadBalancer = new LoadBalancer({ nWorkers }) } = {}) {
-		this.task = task;
+	constructor({ target, bachfile, callbackAddress, nWorkers }, { loadBalancer = new LoadBalancer({ nWorkers }) } = {}) {
 		this.loadBalancer = loadBalancer;
 
 		this.bachfile = bachfile;
@@ -46,7 +45,9 @@ class StreamCluster {
 			SOURCE_PORT: loadBalancer.PORT
 		};
 
-		this.nodes.push(this.task.run({ bachfile, env, target }).catch(err => console.error(err)));
+		const task = new Task({ bachfile, target });
+		task.run({ bachfile, env }).catch(err => console.error(err));
+		this.nodes.push(task);
 	}
 
 }

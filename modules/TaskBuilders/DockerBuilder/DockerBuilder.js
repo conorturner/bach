@@ -1,4 +1,5 @@
 const TaskBuilder = require("../TaskBuilder/TaskBuilder");
+const Docker = require("../../Docker/Docker")();
 
 class DockerBuilder extends TaskBuilder {
 
@@ -12,7 +13,7 @@ class DockerBuilder extends TaskBuilder {
 		this.copySrc("build/");
 
 		const tag = `bach-${bachfile["logical-name"]}:latest`;
-		return this.docker.build({ tag, workdir: `${this.path}/build`, file: ".temp.Dockerfile" });
+		return Docker.build({ tag, workdir: `${this.path}/build`, file: ".temp.Dockerfile" });
 	}
 
 }
