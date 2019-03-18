@@ -1,8 +1,7 @@
 module.exports = ({
 					  http = require("http"),
 					  Task = require("../Task/Task")(),
-					  HttpStorage = require("../Storage/HttpStorage/HttpStorage"),
-					  uuidv4 = require("uuid/v4")
+					  HttpStorage = require("../Storage/HttpStorage/HttpStorage")
 				  } = {}) => {
 
 	class MapReduceCluster {
@@ -13,33 +12,71 @@ module.exports = ({
 			this.callbackAddress = callbackAddress;
 			this.target = target;
 			this.tasks = [];
+			this.buffers = {};
 			this.server = http.createServer();
-			this.server.on("listening", () => {
-				this.startTasks(nTasks);
-			});
+			this.server.on("listening", () => this.startTasks(nTasks));
 
-			let sum = 0;
 			this.server.on("request", (req, res) => {
 				// console.log(req.url, req.headers)
-				const taskId = MapReduceCluster.getTaskId(req.url);
-				console.time(taskId);
-				req.on("data", (data) => {
-					// console.log(taskId)
-					sum += data.length;
-					// console.log(sum/1e6);
-				});
+				const type = req.url.split("/").pop();
 
-				req.on("end", () => {
-					console.timeEnd(taskId);
-					res.end();
-				});
-				// res.end();
-				// parse request
-				// if request is a open event - stream into buffer
-				// if request is a close event
-				//   if close requires restart - call task restart
-				//   else - emit task complete
+				switch (type) { // SSR - super simple routing :D
+					case "callback": {
+						this.handleCallbackRequest(req, res);
+						break;
+					}
+					case "end": {
+						this.handleEndRequest(req, res);
+						break;
+					}
+					default: {
+						console.log("unknown type:", type);
+					}
+				}
 			});
+		}
+
+		handleCallbackRequest(req, res) {
+			const taskId = MapReduceCluster.getTaskId(req.url);
+			let chunks = [];
+			req.on("data", (data) => {
+				chunks.push(data);
+			});
+
+			req.on("end", () => {
+				if (this.buffers[taskId]) this.buffers[taskId] = Buffer.concat([this.buffers[taskId], ...chunks]);
+				else this.buffers[taskId] = Buffer.concat(chunks);
+				res.end();
+			});
+		}
+
+		handleEndRequest(req, res) {
+			res.end();
+
+			const taskId = MapReduceCluster.getTaskId(req.url);
+			const bytesRead = parseInt(req.headers.consumed.split("=").pop(), 10);
+
+			const taskIndex = this.tasks.findIndex(({ uuid }) => uuid === taskId);
+			const task = this.tasks[taskIndex];
+			const targetBytesRead = (task.byteRange.end - task.byteRange.start);
+
+			if (bytesRead === targetBytesRead) {
+				console.log("Completed read precisely.");
+				console.log(Object.keys(this.buffers).map(key => this.buffers[key].length));
+			}
+			else {
+				if (bytesRead > targetBytesRead) {
+					console.log("Over read", JSON.stringify(Object.assign({
+						taskId,
+						bytesRead,
+						targetBytesRead
+					}, task.byteRange)));
+					return;
+				}
+				console.log(JSON.stringify(Object.assign({ taskId, bytesRead, targetBytesRead }, task.byteRange)));
+				const newStart = task.byteRange.start + bytesRead;
+				this.startTask({ start: newStart, end: task.byteRange.end, uuid: taskId, index: taskIndex });
+			}
 		}
 
 		static getTaskId(url) {
@@ -57,12 +94,13 @@ module.exports = ({
 					console.log(indexArray);
 					console.timeEnd("httpStorage.getChunkIndexes");
 					for (let i = 0; i < nTasks; i++) this.startTask(indexArray[i]);
-				});
+				})
+				.catch(error => console.error("error starting tasks", error));
 
 		}
 
-		startTask({ start, end }) {
-			const task = new Task({ bachfile: this.bachfile, target: this.target });
+		startTask({ start, end, uuid, index }) {
+			const task = new Task({ bachfile: this.bachfile, target: this.target, uuid });
 
 			const env = {
 				INPUT_TYPE: "storage",
@@ -76,8 +114,10 @@ module.exports = ({
 				UUID: task.uuid // TODO: move this inside task class
 			};
 
+			task.byteRange = { start, end }; // TODO: move this somewhere better
 			task.run({ bachfile: this.bachfile, env }).catch(err => console.error("task.run", err));
-			this.tasks.push(task);
+			if (index === undefined) this.tasks.push(task);
+			else this.tasks[index] = task;
 		}
 
 		run({ dataUri }) {

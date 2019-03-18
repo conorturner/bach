@@ -3,6 +3,7 @@ const net = require("net");
 const http = require("http");
 const https = require("https");
 const URL = require("url");
+const StreamByteCounter = require("./.StreamByteCounter.js");
 
 const {
 	INPUT_TYPE, BINARY, ARGS, SOURCE_HOST, SOURCE_PORT,
@@ -10,7 +11,7 @@ const {
 } = process.env;
 
 
-const openCallback = (callback) => {
+const openCallback = (callback, onEnd) => {
 	let options = {
 		method: "POST",
 		hostname: SOURCE_HOST,
@@ -21,7 +22,7 @@ const openCallback = (callback) => {
 		}
 	};
 	const req = http.request(options, callback);
-	req.on("end", () => process.exit(0));
+	req.on("end", () => onEnd());
 	req.setTimeout(10 * 1000, () => {
 		console.error("callback connection timed out");
 		process.exit(1);
@@ -45,6 +46,27 @@ const readStorage = (uri, callback) => {
 	return protocol.request(options, callback).end();
 };
 
+const sendEndRequest = (bytesConsumed) => {
+	let options = {
+		method: "POST",
+		hostname: SOURCE_HOST,
+		port: SOURCE_PORT,
+		path: `/${UUID}/end`,
+		headers: {
+			consumed: `bytes=${bytesConsumed}`
+		}
+	};
+	const req = http.request(options);
+	// req.on("end", () => process.exit(0));
+	req.end();
+	req.setTimeout(10 * 1000, () => {
+		console.log(options);
+		console.error("end connection timed out");
+		process.exit(1);
+	});
+	return req;
+};
+
 switch (INPUT_TYPE) {
 	case "stdin": {
 		const options = { stdio: [process.stdin, process.stdout, process.stderr] }; // share STD interface with docker run
@@ -55,9 +77,22 @@ switch (INPUT_TYPE) {
 	case "storage": {
 		console.log("storage", BINARY, ARGS, DATA_URI, SOURCE_HOST);
 
-		readStorage(DATA_URI, (res) => {
-			const req = openCallback();
-			res.pipe(req);
+		const byteCounter = new StreamByteCounter({ cap: parseInt(DATA_END, 10) - parseInt(DATA_START, 10) });
+		const callbackRequest = openCallback(() => sendEndRequest(byteCounter.length));
+
+		const storageRequest = readStorage(DATA_URI, (res) => {
+			//TODO: pipe into child process
+			byteCounter.once("cap", () => {
+				// storageRequest.abort();
+				res.pause();
+				callbackRequest.once("drain", () => callbackRequest.end());
+			});
+
+			res.pipe(byteCounter).pipe(callbackRequest);
+			// storageRequest.on("abort", () => sendEndRequest(byteCounter.length));
+			// callbackRequest.on("close", () => sendEndRequest(byteCounter.length));
+
+			setTimeout(() => storageRequest.abort(), 3000); // simulating preemption
 		});
 
 		break;

@@ -13,13 +13,13 @@ module.exports = ({
 
 	class Task {
 
-		constructor({ bachfile, target }) {
+		constructor({ bachfile, target, uuid = uuidv4() }) {
 			if (!bachfile) throw new Error("'bachfile' must be passed into constructor.");
 			if (!target) throw new Error("'target' of task must be provided.");
 
 			this.bachfile = bachfile;
 			this.target = target;
-			this.uuid = uuidv4();
+			this.uuid = uuid;
 		}
 
 		build({ path }) {

@@ -1,6 +1,7 @@
 {
-  "logical-name": "json-searcher",
+  "logical-name": "gdelt",
   "interruptible": true,
+  "src": "./src",
   "binary": "node",
   "args": [
     "bin.js"

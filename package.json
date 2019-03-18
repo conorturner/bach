@@ -28,6 +28,7 @@
     "commander": "^2.19.0",
     "figlet": "^1.2.1",
     "inquirer": "^6.2.1",
+    "passthrough-counter": "^1.0.0",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.5",
     "stream-throttle": "^0.1.3",

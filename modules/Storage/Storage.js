@@ -7,9 +7,10 @@ class Storage {
 		return Promise.all(promiseArray)
 			.then(divisions => [0].concat(divisions))
 			.then(divisions => divisions.map((division, index) => {
-				if (index === 0) return { start: 0, end: divisions[index + 1] };
-				else if (index === divisions.length - 1) return { start: divisions[index], end: size };
-				else return { start: division, end: divisions[index + 1] };
+				if (divisions.length === 1) return { start: 0, end: size - 1 };
+				else if (index === 0) return { start: 0, end: divisions[index + 1] };
+				else if (index === divisions.length - 1) return { start: divisions[index] + 1, end: size - 1 };
+				else return { start: division + 1, end: divisions[index + 1] };
 			}));
 	}
 }

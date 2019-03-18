@@ -32,7 +32,7 @@ https://docs.docker.com/install/linux/linux-postinstall/#configure-where-the-doc
 
 Run a map reduce style task
 ```bash
-bach task-build && bach task-run --ip 192.168.0.10 --data https://storage.googleapis.com/gdelt-europe-west1/GDELT1MIL.DAT -p 4
+bach task-build && bach task-run --ip 192.168.0.10 --data https://storage.googleapis.com/public-stuff/GDELT1MIL.dat -p 4
 ```
 
 ## Task Definitions
@@ -106,6 +106,8 @@ https://registry.opendata.aws/commoncrawl/
 
 _Nexrad weather satellite data_
 https://docs.opendata.aws/noaa-nexrad/readme.html
+Data can be searched byprefix as shown below
+https://noaa-nexrad-level2.s3.amazonaws.com/?prefix=2019/01/19
 
 _Database of a subset of all 'events' that occur on this earth._ Scraped from the internet I assume.
 https://www.gdeltproject.org/#intro
