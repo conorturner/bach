@@ -1,6 +1,4 @@
-const WINDOW_SIZE = 100;
-
-let remainder = "", acc = 0, errors = [], movingWindow = [];
+let remainder = "", acc = {};
 process.stdin.on("readable", () => {
 
 	let chunk;
@@ -14,8 +12,6 @@ process.stdin.on("readable", () => {
 		units.forEach(unit => {
 
 			try {
-				// const line = JSON.parse(unit);
-
 				let [
 					date,
 					Source,
@@ -50,33 +46,10 @@ process.stdin.on("readable", () => {
 				dateObj.setHours(0, 0, 0, 0);
 				// console.log(acc,dateObj);
 
-				if (movingWindow.length < WINDOW_SIZE) movingWindow.push({ Target, NumEvents, dateObj });
-				else {
-
-					const sums = movingWindow // sum all events per target in the window
-						.reduce((acc, { Target, NumEvents }) => Object.assign(acc, { [Target]: (acc[Target] || 0) + NumEvents }), {});
-
-					const sortedByEvents = Object.keys(sums) // find the largest
-						.map(Target => ({ Target, NumEvents: sums[Target] }))
-						.sort((a, b) => a.NumEvents === b.NumEvents ? 0 : a.NumEvents < b.NumEvents ? 1 : -1);
-
-					const sortedByDate = movingWindow
-						.sort((a, b) => a.dateObj.getTime() === b.dateObj.getTime() ? 0 : a.dateObj.getTime() > b.dateObj.getTime() ? 1 : -1);
-
-					const windowStart = sortedByDate[0].dateObj;
-					const windowEnd = sortedByDate[sortedByDate.length - 1].dateObj;
-
-					const [first, second, third] = sortedByEvents;
-
-					// console.log(JSON.stringify({ first, second, third, windowStart, windowEnd })); // write out as json stream
-
-					movingWindow.push({ Target, NumEvents, dateObj });
-					movingWindow.splice(0, 1);
-				}
-				acc++;
+				acc[CAMEOCode] = acc[CAMEOCode] || 0;
+				acc[CAMEOCode]++;
 			}
 			catch (e) {
-				errors.push(e);
 				console.log(unit);
 				console.log("error", e);
 				process.exit(1);
@@ -87,5 +60,6 @@ process.stdin.on("readable", () => {
 });
 
 process.stdin.on("end", () => {
+	console.log(JSON.stringify(acc));
 	process.exit(0);
 });

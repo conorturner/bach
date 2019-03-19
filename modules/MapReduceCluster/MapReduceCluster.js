@@ -1,6 +1,7 @@
 module.exports = ({
 					  http = require("http"),
 					  Task = require("../Task/Task")(),
+					  tar = require("tar-fs"),
 					  HttpStorage = require("../Storage/HttpStorage/HttpStorage")
 				  } = {}) => {
 
@@ -12,21 +13,34 @@ module.exports = ({
 			this.callbackAddress = callbackAddress;
 			this.target = target;
 			this.tasks = [];
-			this.buffers = {};
+			this.buffers = [];
+			this.nComplete = 0;
 			this.server = http.createServer();
 			this.server.on("listening", () => this.startTasks(nTasks));
 
 			this.server.on("request", (req, res) => {
-				// console.log(req.url, req.headers)
 				const type = req.url.split("/").pop();
 
 				switch (type) { // SSR - super simple routing :D
+					case "app": {
+						// console.log("app");
+						const tarStream = tar.pack(this.bachfile.src);
+						tarStream.pipe(res);
+						break;
+					}
 					case "callback": {
+						// console.log("callback");
 						this.handleCallbackRequest(req, res);
 						break;
 					}
-					case "end": {
-						this.handleEndRequest(req, res);
+					case "config": {
+						// console.log("config");
+						this.handleConfigRequest(req, res);
+						break;
+					}
+					case "close": {
+						// console.log("close");
+						this.handleCloseRequest(req, res);
 						break;
 					}
 					default: {
@@ -34,6 +48,31 @@ module.exports = ({
 					}
 				}
 			});
+		}
+
+		onTaskComplete() {
+			this.nComplete++;
+			if (this.nComplete === this.tasks.length) {
+				console.log(Buffer.concat(this.buffers).toString());
+				console.log(Object.keys(this.buffers).reduce((acc, buffer) => buffer.length + acc, 0));
+				console.timeEnd("time");
+				this.server.close();
+			}
+		}
+
+		handleConfigRequest(req, res) {
+			const taskId = MapReduceCluster.getTaskId(req.url);
+			const task = this.getTask({ taskId });
+			const config = JSON.stringify({
+				BINARY: this.bachfile.binary,
+				ARGS: this.bachfile.args,
+				TASK_TYPE: "mapper",
+				DATA_URI: this.dataUri,
+				DATA_START: task.byteRange.start,
+				DATA_END: task.byteRange.end // the index of this may need to be -1
+			});
+
+			res.end(config);
 		}
 
 		handleCallbackRequest(req, res) {
@@ -44,38 +83,27 @@ module.exports = ({
 			});
 
 			req.on("end", () => {
-				if (this.buffers[taskId]) this.buffers[taskId] = Buffer.concat([this.buffers[taskId], ...chunks]);
-				else this.buffers[taskId] = Buffer.concat(chunks);
+				this.buffers.push(Buffer.concat(chunks));
 				res.end();
 			});
 		}
 
-		handleEndRequest(req, res) {
+		handleCloseRequest(req, res) {
 			res.end();
 
 			const taskId = MapReduceCluster.getTaskId(req.url);
-			const bytesRead = parseInt(req.headers.consumed.split("=").pop(), 10);
-
-			const taskIndex = this.tasks.findIndex(({ uuid }) => uuid === taskId);
-			const task = this.tasks[taskIndex];
-			const targetBytesRead = (task.byteRange.end - task.byteRange.start);
+			const bytesRead = parseInt(req.headers.consumed, 10);
+			const task = this.getTask({ taskId });
+			const targetBytesRead = (task.byteRange.end - task.byteRange.start) + 1; // because end index is inclusive e.g. (start=0, end=1, bytes 0 and 1 are read so n=2)
 
 			if (bytesRead === targetBytesRead) {
-				console.log("Completed read precisely.");
-				console.log(Object.keys(this.buffers).map(key => this.buffers[key].length));
+				console.log("Task complete:", taskId);
+				this.onTaskComplete();
+				// TODO: cleanup of resources used for the given task need to be cleared up here e.g. delete/stop vms
 			}
 			else {
-				if (bytesRead > targetBytesRead) {
-					console.log("Over read", JSON.stringify(Object.assign({
-						taskId,
-						bytesRead,
-						targetBytesRead
-					}, task.byteRange)));
-					return;
-				}
-				console.log(JSON.stringify(Object.assign({ taskId, bytesRead, targetBytesRead }, task.byteRange)));
-				const newStart = task.byteRange.start + bytesRead;
-				this.startTask({ start: newStart, end: task.byteRange.end, uuid: taskId, index: taskIndex });
+				console.log(`Task preempted with ${targetBytesRead - bytesRead} bytes remaining:`, taskId);
+				this.startTask({ uuid: taskId, start: task.byteRange.start + bytesRead, end: task.byteRange.end });
 			}
 		}
 
@@ -99,28 +127,29 @@ module.exports = ({
 
 		}
 
-		startTask({ start, end, uuid, index }) {
-			const task = new Task({ bachfile: this.bachfile, target: this.target, uuid });
+		getTask({ taskId }) {
+			const taskIndex = this.tasks.findIndex(({ uuid }) => uuid === taskId);
+			return this.tasks[taskIndex];
+		}
 
-			const env = {
-				INPUT_TYPE: "storage",
-				BINARY: this.bachfile.binary,
-				ARGS: this.target === "local" ? JSON.stringify(this.bachfile.args) : this.bachfile.args,
-				SOURCE_HOST: this.callbackAddress,
-				SOURCE_PORT: this.callbackPort,
-				DATA_URI: this.dataUri,
-				DATA_START: start,
-				DATA_END: end,
-				UUID: task.uuid // TODO: move this inside task class
-			};
+		setTask({ taskId, task }) {
+			const taskIndex = this.tasks.findIndex(({ uuid }) => uuid === taskId);
+			this.tasks[taskIndex] = task;
+		}
+
+		startTask({ start, end, uuid }) {
+			const task = new Task({ bachfile: this.bachfile, target: this.target, uuid });
+			const env = { CALLBACK_ENDPOINT: `http://${this.callbackAddress}:${this.callbackPort}/${task.uuid}` };
+
+			if (uuid === undefined) this.tasks.push(task); // task must be in task array before run is called.
+			else this.setTask({ taskId: uuid, task });
 
 			task.byteRange = { start, end }; // TODO: move this somewhere better
 			task.run({ bachfile: this.bachfile, env }).catch(err => console.error("task.run", err));
-			if (index === undefined) this.tasks.push(task);
-			else this.tasks[index] = task;
 		}
 
 		run({ dataUri }) {
+			console.time("time");
 			this.dataUri = dataUri;
 			this.server.listen(this.callbackPort);
 			return Promise.resolve(); // await end event

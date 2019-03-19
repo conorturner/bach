@@ -6,7 +6,7 @@ class Slave {
 		this.tar = tar;
 	}
 
-	init(){
+	init() {
 		return Promise.all([
 			this.getConfig(),
 			this.pullAppCode()
@@ -18,10 +18,10 @@ class Slave {
 		return this.request({
 			uri: `${this.CALLBACK_ENDPOINT}/app`
 		})
-			.then((result) => new Promise(resolve => this.tar.extract("./app").end(result).on("finish", () => resolve())));
+			.then((result) => new Promise(resolve => this.tar.extract("./src").end(result).on("finish", () => resolve())));
 	}
 
-	getConfig () {
+	getConfig() {
 		return this.request({
 			uri: `${this.CALLBACK_ENDPOINT}/config`,
 			json: true

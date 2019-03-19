@@ -10,31 +10,37 @@ module.exports = ({ // Injectable dependencies
 
 	class Docker {
 
-		static run({ tag, env, cpu, memory, entry, entryArgs }) {
+		static run({ tag, env, cpu, memory }) {
 
 			const create = () => {
 				const options = {
 					method: "POST",
 					url: "http://strider.local:2375/v1.24/containers/create",
 					body: {
-						Image: tag,
+						Image: "conorturner/bach-slave",
 						Env: Object.keys(env).map(key => `${ key }=${ env[key] }`),
 						// name: tag,
 						AttachStdout: true,
 						AttachStdin: true,
 						AttachStderr: true,
-						Cmd: [entry, ...entryArgs],
 						HostConfig: {
-							CpuQuota: 100000 * cpu.max,
+							CpuQuota: 100000 * cpu,
 							CpuPeriod: 100000,
-							Memory: memory.max * 1e6,
+							Memory: memory * 1e6,
 							MemorySwap: -1 // unlimited swap
 						}
 					},
 					json: true
 				};
 
-				return request(options);
+				return request(options)
+					.catch(error => {
+						if (error.statusCode === 404) {
+							console.error("Slave docker image not pulled on host.");
+							process.exit(1);
+						}
+						return Promise.reject(error);
+					});
 			};
 
 			const start = ({ Id, Warnings }) => {

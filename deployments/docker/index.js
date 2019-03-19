@@ -21,6 +21,12 @@ slave.init()
 			}
 		}
 	})
-	.catch(console.error);
+	.catch(error => {
+		console.log("error getting config", error);
+		process.exit(1);
+	});
 
-
+process.on("uncaughtException", (err) => {
+	console.error(err);
+	process.exit(1);
+});

@@ -49,7 +49,7 @@ class HttpStorage {
 					const dataString = data.toString();
 					if (dataString.includes("\n")) {
 
-						index += dataString.indexOf("\n") + 1; // + 1 because file indexes work differently to strings
+						index += dataString.indexOf("\n"); // + 1 because file indexes work differently to strings
 						found = true;
 						req.abort();
 						return resolve(index);

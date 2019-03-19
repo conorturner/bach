@@ -54,7 +54,7 @@ class Mapper {
 		const counter = new StreamByteCounter();
 
 		setTimeout(() => {
-			// this is preemption
+			// this is preemption (only for testing)
 			storageStream.pause();
 			counter.end();
 		}, 1000);
@@ -68,13 +68,13 @@ class Mapper {
 		child.stdout.pipe(callbackStream);
 
 		child.on("exit", () => {
-			// console.log("child on exit");
+			console.log("child on exit");
 			// callbackStream.end();
 			// process.exit(0);
 		});
 
 		callbackStream.on("end", () => {
-			// console.log("callbackStream on end", counter.length);
+			console.log("callbackStream on end", counter.length);
 			this.sendCloseRequest(counter.length)
 				.then(() => process.exit(0))
 				.catch(console.error);
