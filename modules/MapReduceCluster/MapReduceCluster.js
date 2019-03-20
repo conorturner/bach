@@ -15,12 +15,14 @@ module.exports = ({
 			this.tasks = [];
 			this.buffers = [];
 			this.nComplete = 0;
+			this.hasStarted = false; // not sure this flag is the best way
 			this.server = http.createServer();
 			this.server.on("listening", () => this.startTasks(nTasks));
 
-			setTimeout(() => this.startupTimeout(), 15 * 1000);
+			setTimeout(() => this.startupTimeout(), 150 * 1000);
 
 			this.server.on("request", (req, res) => {
+				this.hasStarted = true; // again, maybe not the best
 				const type = req.url.split("/").pop();
 
 				switch (type) { // SSR - super simple routing :D
@@ -164,7 +166,7 @@ module.exports = ({
 		}
 
 		startupTimeout() {
-			if (this.buffers.length === 0) {
+			if (!this.hasStarted) {
 				console.log("timeout on startup");
 				this.cleanUpResources();
 			}
