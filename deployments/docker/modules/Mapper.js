@@ -1,4 +1,4 @@
-const StreamByteCounter = require("./StreamByteCounter");
+const StorageReadable = require("./StorageReadable");
 
 class Mapper {
 	constructor(
@@ -16,15 +16,7 @@ class Mapper {
 	}
 
 	readStorage() {
-		const options = {
-			method: "GET",
-			uri: this.DATA_URI,
-			headers: {
-				range: `bytes=${this.DATA_START}-${this.DATA_END}`
-			}
-		};
-
-		return this.request(options);
+		return new StorageReadable({ DATA_URI: this.DATA_URI, DATA_START: this.DATA_START, DATA_END: this.DATA_END });
 	}
 
 	openCallback() {
@@ -36,7 +28,7 @@ class Mapper {
 		return this.request(options);
 	}
 
-	sendCloseRequest(bytesConsumed){
+	sendCloseRequest(bytesConsumed) {
 		const options = {
 			method: "POST",
 			uri: `${this.CALLBACK_ENDPOINT}/close`,
@@ -51,20 +43,18 @@ class Mapper {
 	run() {
 		const storageStream = this.readStorage();
 		const callbackStream = this.openCallback();
-		const counter = new StreamByteCounter();
 
-		setTimeout(() => {
-			// this is preemption (only for testing)
-			storageStream.pause();
-			counter.end();
-		}, 1000);
+		// setTimeout(() => {
+		// 	// this is preemption (only for testing)
+		// 	storageStream.preempt();
+		// }, 400);
 
 		const options = { stdio: ["pipe", "pipe", "pipe"] }; // share STDERR with this parent process
 		const child = this.childProcess.spawn(this.BINARY, this.ARGS, options);
 
 		child.on("error", process.stderr.write);
 
-		storageStream.pipe(counter).pipe(child.stdin);
+		storageStream.pipe(child.stdin);
 		child.stdout.pipe(callbackStream);
 
 		child.on("exit", () => {
@@ -74,10 +64,17 @@ class Mapper {
 		});
 
 		callbackStream.on("end", () => {
-			console.log("callbackStream on end", counter.length);
-			this.sendCloseRequest(counter.length)
+			console.log("callbackStream on end", storageStream.bytesRead);
+			this.sendCloseRequest(storageStream.bytesRead)
 				.then(() => process.exit(0))
-				.catch(console.error);
+				.catch(error => {
+					console.error(error);
+					process.exit(1);
+				});
+		});
+
+		callbackStream.on("close", (hadError) => {
+			if (hadError) process.exit(1);
 		});
 	}
 }

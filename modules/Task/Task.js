@@ -1,6 +1,7 @@
 module.exports = ({
 					  Docker = require("../Docker/Docker")(),
 					  GoogleCloud = require("../GoogleCloud/GoogleCloud"),
+					  ComputeEngine = require("../ComputeEngine/ComputeEngine"),
 					  DockerBuilder = require("../TaskBuilders/DockerBuilder/DockerBuilder"),
 					  LambdaBuilder = require("../TaskBuilders/LambdaBuilder/LambdaBuilder"),
 					  CloudFunctionBuilder = require("../TaskBuilders/CloudFunctionBuilder/CloudFunctionBuilder"),
@@ -10,6 +11,7 @@ module.exports = ({
 				  } = {}) => {
 
 	const googleCloud = new GoogleCloud();
+	const computeEngine = new ComputeEngine();
 
 	class Task {
 
@@ -20,9 +22,11 @@ module.exports = ({
 			this.bachfile = bachfile;
 			this.target = target;
 			this.uuid = uuid;
+			this.hasInstance = false; // this is for cloud deployments requiring instance creation
 		}
 
 		build({ path }) {
+			// deprecated
 			if (!this.bachfile) {
 				console.log(".build called without bachfile");
 				return Promise.resolve();
@@ -71,6 +75,16 @@ module.exports = ({
 					})
 						.catch(console.error);
 				}
+				case "gce": {
+					const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
+					if (!this.hasInstance) return computeEngine.createInstances({ names: [name], env })
+						.then(() => {
+							this.hasInstance = true;
+						});
+
+					return computeEngine.startInstances({ names: [name] })
+						.catch(console.error);
+				}
 
 				default: {
 					throw new Error("Unknown runtime target");
@@ -86,6 +100,13 @@ module.exports = ({
 
 			const cloudFunctionBuilder = new CloudFunctionBuilder({ path });
 			return cloudFunctionBuilder.deploy(this.bachfile);
+		}
+
+		delete(){
+			// other resources which require deletion can go here under a switch
+			const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
+			return computeEngine.deleteInstances({ names: [name] })
+				.catch(console.error);
 		}
 
 		static readBachfile(path) {

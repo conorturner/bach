@@ -14,7 +14,7 @@ describe("Test Docker Wrapper", () => {
 
 	it("Slave should request application code", (done) => {
 
-		const N_BYTES = 1e8;
+		const N_BYTES = 70e6;
 		let echoedBytes = 0, consumed;
 
 		const server = http.createServer();
@@ -31,10 +31,14 @@ describe("Test Docker Wrapper", () => {
 					// res.end();
 					break;
 				}
+				case "heartbeat": {
+					res.end();
+					break;
+				}
 				case "config": {
 					res.end(JSON.stringify({
 						BINARY: "node",
-						ARGS: ["./app/echo.js"],
+						ARGS: ["./src/echo.js"],
 						TASK_TYPE: "mapper",
 						DATA_URI: "https://storage.googleapis.com/public-stuff/GDELT1MIL.dat",
 						DATA_START: 0,
@@ -49,7 +53,9 @@ describe("Test Docker Wrapper", () => {
 						echoedBytes = buffer.length;
 					};
 
-					req.on("data", (data) => buffer.push(data));
+					req.on("data", (data) => {
+						buffer.push(data);
+					});
 					req.on("end", () => {
 						clientEnd();
 						res.end();

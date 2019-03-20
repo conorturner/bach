@@ -18,6 +18,8 @@ module.exports = ({
 			this.server = http.createServer();
 			this.server.on("listening", () => this.startTasks(nTasks));
 
+			setTimeout(() => this.startupTimeout(), 15 * 1000);
+
 			this.server.on("request", (req, res) => {
 				const type = req.url.split("/").pop();
 
@@ -26,6 +28,11 @@ module.exports = ({
 						// console.log("app");
 						const tarStream = tar.pack(this.bachfile.src);
 						tarStream.pipe(res);
+						break;
+					}
+					case "heartbeat": {
+						// console.log("heartbeat");
+						res.end();
 						break;
 					}
 					case "callback": {
@@ -57,6 +64,7 @@ module.exports = ({
 				console.log(Object.keys(this.buffers).reduce((acc, buffer) => buffer.length + acc, 0));
 				console.timeEnd("time");
 				this.server.close();
+				this.cleanUpResources();
 			}
 		}
 
@@ -153,6 +161,23 @@ module.exports = ({
 			this.dataUri = dataUri;
 			this.server.listen(this.callbackPort);
 			return Promise.resolve(); // await end event
+		}
+
+		startupTimeout() {
+			if (this.buffers.length === 0) {
+				console.log("timeout on startup");
+				this.cleanUpResources();
+			}
+		}
+
+		cleanUpResources(){
+			switch (this.target) {
+				case "gce": {
+					Promise.all(this.tasks.map(task => task.delete()))
+						.then(() => console.log("cleaned up"))
+						.catch(console.error);
+				}
+			}
 		}
 	}
 
