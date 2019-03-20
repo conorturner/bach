@@ -6,7 +6,7 @@ class ComputeEngine {
 
 	createInstances({ names, env }) {
 		const envFlag = `--container-env ${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
-		const shutdownScript = "docker stop $(docker ps -q)";
+		const shutdownScript = "docker stop \\$(docker ps -q)";
 		const flags = [
 			"--preemptible",
 			"--zone europe-west1-b",
