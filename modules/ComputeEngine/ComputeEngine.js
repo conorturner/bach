@@ -14,6 +14,7 @@ class ComputeEngine {
 			"--custom-cpu 2",
 			"--custom-memory 3GB",
 			"--format json",
+			"--container-restart-policy never",
 			`--metadata shutdown-script="#! /bin/bash \n ${shutdownScript}"`,
 			envFlag
 		];
