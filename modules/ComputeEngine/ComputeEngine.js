@@ -10,8 +10,8 @@ class ComputeEngine {
 			"--preemptible",
 			"--zone europe-west1-b",
 			"--container-image conorturner/bach-slave",
-			"--custom-cpu 1",
-			"--custom-memory 1GB",
+			"--custom-cpu 2",
+			"--custom-memory 3GB",
 			"--format json",
 			envFlag
 		];
