@@ -54,6 +54,10 @@ class Mapper {
 			console.log("SIGTERM");
 			storageStream.preempt();
 		});
+		process.on("SIGINT", () => {
+			console.log("SIGINT");
+			storageStream.preempt();
+		});
 
 		const options = { stdio: ["pipe", "pipe", "pipe"] }; // share STDERR with this parent process
 		const child = this.childProcess.spawn(this.BINARY, this.ARGS, options);

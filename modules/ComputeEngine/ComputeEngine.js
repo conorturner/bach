@@ -6,7 +6,6 @@ class ComputeEngine {
 
 	createInstances({ names, env }) {
 		const envFlag = `--container-env ${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
-		const shutdownScript = "docker stop -t 30 \\$(docker ps -q)";
 		const flags = [
 			"--preemptible",
 			"--zone europe-west1-b",
@@ -15,7 +14,6 @@ class ComputeEngine {
 			"--custom-memory 3GB",
 			"--format json",
 			"--container-restart-policy never",
-			`--metadata shutdown-script="#! /bin/bash \n touch ~/flag;"`,
 			envFlag
 		];
 		const cmd = `gcloud compute instances create-with-container ${names.join(" ")} ${flags.join(" ")}`;
@@ -23,7 +21,27 @@ class ComputeEngine {
 		return new Promise((resolve, reject) => {
 			this.childProcess.exec(cmd, (error, stdout, stderr) =>
 				error ? reject(error) : resolve({ stdout: JSON.parse(stdout), stderr }));
-		});
+		})
+			.then(console.log)
+			.then(() => this.addShutdownScript({ names }));
+	}
+
+	addShutdownScript({ names }) { // this is required as a secondary step because gcloud is shit
+		const shutdownScript = "sudo docker stop \\$(docker ps -q) > /home/conorscturner/log";
+		// const shutdownScript = "docker stop \\$(docker ps -q) > /home/conorscturner/log";
+		const flags = [
+			"--zone europe-west1-b",
+			"--format json",
+			`--metadata user-data="#! /bin/bash \n\n ${shutdownScript}"`
+		];
+
+		return Promise.all(names.map(name => {
+			const cmd = `gcloud compute instances add-metadata ${name} ${flags.join(" ")}`;
+			return new Promise((resolve, reject) => {
+				this.childProcess.exec(cmd, (error, stdout, stderr) =>
+					error ? reject(error) : resolve({ stdout: JSON.parse(stdout), stderr }));
+			});
+		}));
 	}
 
 	startInstances({ names }) {
