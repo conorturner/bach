@@ -1,0 +1,17 @@
+{
+  "logical-name": "taxi",
+  "interruptible": true,
+  "src": "./src",
+  "binary": "node",
+  "args": [
+    "./src/bin.js"
+  ],
+  "delimiter": "\n",
+  "hardware": {
+    "cpu": 2,
+    "memory": 500,
+    "disk": "1g",
+    "graphics": null,
+    "network": null
+  }
+}

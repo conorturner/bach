@@ -112,3 +112,6 @@ https://noaa-nexrad-level2.s3.amazonaws.com/?prefix=2019/01/19
 _Database of a subset of all 'events' that occur on this earth._ Scraped from the internet I assume.
 https://www.gdeltproject.org/#intro
 Smaller 1.1gb version of the dataset http://data.gdeltproject.org/events/GDELT.MASTERREDUCEDV2.1979-2013.zip
+
+Headers for 30gb taxi dataset
+http://www.debs2015.org/call-grand-challenge.html
