@@ -4,7 +4,6 @@ class Slave {
 
 		this.request = request;
 		this.tar = tar;
-		this.heartbeatInterval = setInterval(() => this.heartbeat(), 1000);
 	}
 
 	init() {
@@ -27,17 +26,6 @@ class Slave {
 			uri: `${this.CALLBACK_ENDPOINT}/config`,
 			json: true
 		});
-	}
-
-	heartbeat(){
-		this.request({
-			uri: `${this.CALLBACK_ENDPOINT}/heartbeat`,
-			json: true
-		})
-			.catch(error => {
-				console.error("heartbeat failed", error);
-				process.exit(1);
-			});
 	}
 
 }

@@ -44,6 +44,8 @@ class Mapper {
 		const storageStream = this.readStorage();
 		const callbackStream = this.openCallback();
 
+		this.heartbeatInterval = setInterval(() => this.heartbeat(storageStream.bytesRead), 10*1000);
+
 		// setTimeout(() => {
 		// 	// this is preemption (only for testing)
 		// 	storageStream.preempt();
@@ -76,6 +78,18 @@ class Mapper {
 		callbackStream.on("close", (hadError) => {
 			if (hadError) process.exit(1);
 		});
+	}
+
+	heartbeat(bytesRead){
+		this.request({
+			uri: `${this.CALLBACK_ENDPOINT}/heartbeat`,
+			headers: { bytesRead },
+			json: true
+		})
+			.catch(error => {
+				console.error("heartbeat failed", error);
+				process.exit(1);
+			});
 	}
 }
 

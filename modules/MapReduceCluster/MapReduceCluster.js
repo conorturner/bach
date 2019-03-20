@@ -33,7 +33,7 @@ module.exports = ({
 						break;
 					}
 					case "heartbeat": {
-						// console.log("heartbeat");
+						console.log(req.url, req.headers.bytesRead);
 						res.end();
 						break;
 					}
@@ -172,7 +172,7 @@ module.exports = ({
 			}
 		}
 
-		cleanUpResources(){
+		cleanUpResources() {
 			switch (this.target) {
 				case "gce": {
 					Promise.all(this.tasks.map(task => task.delete()))
