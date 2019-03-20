@@ -158,8 +158,6 @@ module.exports = ({
 		}
 
 		startTask({ start, end, uuid }) {
-			const env = { CALLBACK_ENDPOINT: `http://${this.callbackAddress}:${this.callbackPort}/${task.uuid}` };
-
 			let task;
 			if (uuid === undefined) { // create new task
 				task = new Task({ bachfile: this.bachfile, target: this.target, uuid });
@@ -167,6 +165,7 @@ module.exports = ({
 			}
 			else task = this.getTask({ taskId: uuid }); // restart task
 
+			const env = { CALLBACK_ENDPOINT: `http://${this.callbackAddress}:${this.callbackPort}/${task.uuid}` };
 			task.byteRange = { start, end }; // TODO: move this somewhere better
 			task.run({ bachfile: this.bachfile, env }).catch(err => console.error("task.run", err));
 		}
