@@ -14,6 +14,7 @@ class ComputeEngine {
 			"--custom-memory 3GB",
 			"--format json",
 			"--container-restart-policy never",
+			"--container-arg=\"--stop-signal=SIGINT\"",
 			envFlag
 		];
 		const cmd = `gcloud compute instances create-with-container ${names.join(" ")} ${flags.join(" ")}`;
