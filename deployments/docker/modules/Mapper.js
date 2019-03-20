@@ -50,7 +50,10 @@ class Mapper {
 		// 	// this is preemption (only for testing)
 		// 	storageStream.preempt();
 		// }, 400);
-		process.on("SIGTERM", () => storageStream.preempt());
+		process.on("SIGTERM", () => {
+			console.log("SIGTERM");
+			storageStream.preempt();
+		});
 
 		const options = { stdio: ["pipe", "pipe", "pipe"] }; // share STDERR with this parent process
 		const child = this.childProcess.spawn(this.BINARY, this.ARGS, options);

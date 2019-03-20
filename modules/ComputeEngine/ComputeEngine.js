@@ -11,8 +11,8 @@ class ComputeEngine {
 			"--preemptible",
 			"--zone europe-west1-b",
 			"--container-image conorturner/bach-slave",
-			"--custom-cpu 4",
-			"--custom-memory 4GB",
+			"--custom-cpu 2",
+			"--custom-memory 3GB",
 			"--format json",
 			`--metadata shutdown-script="#! /bin/bash ${shutdownScript}"`,
 			envFlag
