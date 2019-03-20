@@ -33,8 +33,7 @@ module.exports = ({
 						break;
 					}
 					case "heartbeat": {
-						console.log(req.url, req.headers.bytesRead);
-						res.end();
+						this.handleHeartbeatRequest(req, res);
 						break;
 					}
 					case "callback": {
@@ -115,6 +114,17 @@ module.exports = ({
 				console.log(`Task preempted with ${targetBytesRead - bytesRead} bytes remaining:`, taskId);
 				this.startTask({ uuid: taskId, start: task.byteRange.start + bytesRead, end: task.byteRange.end });
 			}
+		}
+
+		handleHeartbeatRequest(req, res) {
+			res.end();
+
+			const taskId = MapReduceCluster.getTaskId(req.url);
+			const progress = parseInt(req.headers.progress, 10);
+			const task = this.getTask({ taskId });
+			const targetBytesRead = (task.byteRange.end - task.byteRange.start) + 1; // because end index is inclusive e.g. (start=0, end=1, bytes 0 and 1 are read so n=2)
+
+			console.log(req.url, `${progress}/${targetBytesRead} (${Math.round((progress / targetBytesRead) * 100)}%)`);
 		}
 
 		static getTaskId(url) {

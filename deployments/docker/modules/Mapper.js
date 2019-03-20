@@ -80,10 +80,10 @@ class Mapper {
 		});
 	}
 
-	heartbeat(bytesRead){
+	heartbeat(progress){
 		this.request({
 			uri: `${this.CALLBACK_ENDPOINT}/heartbeat`,
-			headers: { bytesRead },
+			headers: { progress },
 			json: true
 		})
 			.catch(error => {
