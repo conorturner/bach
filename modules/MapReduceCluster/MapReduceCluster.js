@@ -158,11 +158,14 @@ module.exports = ({
 		}
 
 		startTask({ start, end, uuid }) {
-			const task = new Task({ bachfile: this.bachfile, target: this.target, uuid });
 			const env = { CALLBACK_ENDPOINT: `http://${this.callbackAddress}:${this.callbackPort}/${task.uuid}` };
 
-			if (uuid === undefined) this.tasks.push(task); // task must be in task array before run is called.
-			else this.setTask({ taskId: uuid, task });
+			let task;
+			if (uuid === undefined) { // create new task
+				task = new Task({ bachfile: this.bachfile, target: this.target, uuid });
+				this.tasks.push(task);
+			}
+			else task = this.getTask({ taskId: uuid }); // restart task
 
 			task.byteRange = { start, end }; // TODO: move this somewhere better
 			task.run({ bachfile: this.bachfile, env }).catch(err => console.error("task.run", err));
