@@ -6,6 +6,7 @@ class ComputeEngine {
 
 	createInstances({ names, env }) {
 		const envFlag = `--container-env ${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
+		const shutdownScript = "docker stop $(docker ps -q)";
 		const flags = [
 			"--preemptible",
 			"--zone europe-west1-b",
@@ -13,6 +14,7 @@ class ComputeEngine {
 			"--custom-cpu 2",
 			"--custom-memory 3GB",
 			"--format json",
+			`--metadata shutdown-script="#! /bin/bash ${shutdownScript}"`,
 			envFlag
 		];
 		const cmd = `gcloud compute instances create-with-container ${names.join(" ")} ${flags.join(" ")}`;

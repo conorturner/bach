@@ -44,12 +44,13 @@ class Mapper {
 		const storageStream = this.readStorage();
 		const callbackStream = this.openCallback();
 
-		this.heartbeatInterval = setInterval(() => this.heartbeat(storageStream.bytesRead), 10*1000);
+		setInterval(() => this.heartbeat(storageStream.bytesRead), 10 * 1000);
 
 		// setTimeout(() => {
 		// 	// this is preemption (only for testing)
 		// 	storageStream.preempt();
 		// }, 400);
+		process.on("SIGTERM", () => storageStream.preempt());
 
 		const options = { stdio: ["pipe", "pipe", "pipe"] }; // share STDERR with this parent process
 		const child = this.childProcess.spawn(this.BINARY, this.ARGS, options);
@@ -80,7 +81,7 @@ class Mapper {
 		});
 	}
 
-	heartbeat(progress){
+	heartbeat(progress) {
 		this.request({
 			uri: `${this.CALLBACK_ENDPOINT}/heartbeat`,
 			headers: { progress },
