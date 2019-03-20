@@ -14,7 +14,7 @@ class ComputeEngine {
 			"--custom-cpu 2",
 			"--custom-memory 3GB",
 			"--format json",
-			`--metadata shutdown-script="#! /bin/bash ${shutdownScript}"`,
+			`--metadata shutdown-script="#! /bin/bash \n ${shutdownScript}"`,
 			envFlag
 		];
 		const cmd = `gcloud compute instances create-with-container ${names.join(" ")} ${flags.join(" ")}`;
