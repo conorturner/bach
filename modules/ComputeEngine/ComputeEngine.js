@@ -5,44 +5,26 @@ class ComputeEngine {
 	}
 
 	createInstances({ names, env }) {
-		const envFlag = `--container-env ${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
+		const envString = `${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
+		const codeUri = "cd /home/conorscturner/bach/deployments/docker";
+		const startupScript = `#! /bin/bash \n\n ${codeUri} \n ${envString} node index > /home/conorscturner/std.log 2> /home/conorscturner/err.log`;
+
 		const flags = [
 			"--preemptible",
 			"--zone europe-west1-b",
-			"--container-image conorturner/bach-slave",
+			"--image node11-vm-image",
 			"--custom-cpu 2",
 			"--custom-memory 3GB",
 			"--format json",
-			"--container-restart-policy never",
-			"--container-arg=\"--stop-signal=SIGINT\"",
-			envFlag
+			`--metadata startup-script="${startupScript}"`
 		];
-		const cmd = `gcloud compute instances create-with-container ${names.join(" ")} ${flags.join(" ")}`;
+		const cmd = `gcloud compute instances create ${names.join(" ")} ${flags.join(" ")}`;
 
 		return new Promise((resolve, reject) => {
 			this.childProcess.exec(cmd, (error, stdout, stderr) =>
 				error ? reject(error) : resolve({ stdout: JSON.parse(stdout), stderr }));
 		})
-			.then(console.log)
-			.then(() => this.addShutdownScript({ names }));
-	}
-
-	addShutdownScript({ names }) { // this is required as a secondary step because gcloud is shit
-		const shutdownScript = "sudo docker stop \\$(docker ps -q) > /home/conorscturner/log";
-		// const shutdownScript = "docker stop \\$(docker ps -q) > /home/conorscturner/log";
-		const flags = [
-			"--zone europe-west1-b",
-			"--format json",
-			`--metadata user-data="#! /bin/bash \n\n ${shutdownScript}"`
-		];
-
-		return Promise.all(names.map(name => {
-			const cmd = `gcloud compute instances add-metadata ${name} ${flags.join(" ")}`;
-			return new Promise((resolve, reject) => {
-				this.childProcess.exec(cmd, (error, stdout, stderr) =>
-					error ? reject(error) : resolve({ stdout: JSON.parse(stdout), stderr }));
-			});
-		}));
+			.then(console.log);
 	}
 
 	startInstances({ names }) {
