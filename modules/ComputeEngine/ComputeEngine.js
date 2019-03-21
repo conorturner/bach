@@ -8,7 +8,7 @@ class ComputeEngine {
 		const envString = `${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
 		const codeUri = "cd /home/conorscturner/bach/deployments/docker";
 		const startupScript = `#! /bin/bash \n\n ${codeUri} \n ${envString} node index > /home/conorscturner/std.log 2> /home/conorscturner/err.log &`;
-		const shutdownScript = "sudo kill -s SIGINT \\$(ps aux | grep 'node index' | grep -v grep | awk '{print $2}')";
+		const shutdownScript = "#! /bin/bash \n\n sudo kill -s SIGINT \\$(ps aux | grep 'node index' | grep -v grep | awk '{print $2}')";
 
 		const flags = [
 			"--preemptible",
@@ -17,7 +17,7 @@ class ComputeEngine {
 			"--custom-cpu 2",
 			"--custom-memory 3GB",
 			"--format json",
-			`--metadata startup-script="${startupScript}" shutdown-script="${shutdownScript}"`
+			`--metadata startup-script="${startupScript}",shutdown-script="${shutdownScript}"`
 		];
 		const cmd = `gcloud compute instances create ${names.join(" ")} ${flags.join(" ")}`;
 
