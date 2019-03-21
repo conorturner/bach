@@ -7,7 +7,7 @@ class ComputeEngine {
 	createInstances({ names, env }) {
 		const envString = `${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
 		const codeUri = "cd /home/conorscturner/bach/deployments/docker";
-		const startupScript = `#! /bin/bash \n\n ${codeUri} \n ${envString} node index > /home/conorscturner/std.log 2> /home/conorscturner/err.log`;
+		const startupScript = `#! /bin/bash \n\n ${codeUri} \n ${envString} node index > /home/conorscturner/std.log 2> /home/conorscturner/err.log &`;
 
 		const flags = [
 			"--preemptible",
