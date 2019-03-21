@@ -83,6 +83,7 @@ module.exports = ({
 					}
 
 					return computeEngine.startInstances({ names: [name] })
+						.then(console.log)
 						.catch(console.error);
 				}
 
