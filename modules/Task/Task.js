@@ -79,7 +79,7 @@ module.exports = ({
 					const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
 					if (!this.hasInstance) {
 						this.hasInstance = true;
-						return computeEngine.createInstances({ names: [name], env });
+						return computeEngine.createInstances({ names: [name], env, bachfile: this.bachfile });
 					}
 
 					return computeEngine.startInstances({ names: [name] })

@@ -8,8 +8,8 @@
   ],
   "delimiter": "\n",
   "hardware": {
-    "cpu": 2,
-    "memory": 500,
+    "cpu": 1,
+    "memory": 2048,
     "disk": "1g",
     "graphics": null,
     "network": null

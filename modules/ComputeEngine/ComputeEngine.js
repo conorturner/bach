@@ -4,7 +4,7 @@ class ComputeEngine {
 		this.childProcess = childProcess;
 	}
 
-	createInstances({ names, env }) {
+	createInstances({ names, env, bachfile }) {
 		const envString = `${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
 		const codeUri = "cd /home/conorscturner/bach/deployments/docker";
 		const startupScript = `#! /bin/bash \n\n ${codeUri} \n ${envString} node index > /home/conorscturner/std.log 2> /home/conorscturner/err.log &`;
@@ -14,8 +14,8 @@ class ComputeEngine {
 			"--preemptible",
 			"--zone europe-west1-b",
 			"--image node11-vm-image",
-			"--custom-cpu 2",
-			"--custom-memory 3GB",
+			`--custom-cpu ${bachfile.hardware.cpu}`,
+			`--custom-memory ${bachfile.hardware.memory}MB`,
 			"--format json",
 			`--metadata startup-script="${startupScript}",shutdown-script="${shutdownScript}"`
 		];
@@ -25,7 +25,7 @@ class ComputeEngine {
 			this.childProcess.exec(cmd, (error, stdout, stderr) =>
 				error ? reject(error) : resolve({ stdout: JSON.parse(stdout), stderr }));
 		})
-			.then(console.log);
+			.then(() => names.forEach(name => console.log("Created vm:", name)));
 	}
 
 	startInstances({ names }) {
