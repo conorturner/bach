@@ -32,7 +32,7 @@ https://docs.docker.com/install/linux/linux-postinstall/#configure-where-the-doc
 
 Run a map reduce style task
 ```bash
-bach task-build && bach task-run --ip 192.168.0.10 --data https://storage.googleapis.com/public-stuff/GDELT1MIL.dat -p 4
+DEBUG=* bach task-run --ip 192.168.0.10 --data https://storage.googleapis.com/datasets-ew2/GDELT.DAT -p 32
 ```
 
 Run a map reduce style task (in the cloud)

@@ -23,6 +23,8 @@ module.exports = ({
 			this.server.on("listening", () => this.startTasks(nTasks));
 
 			setTimeout(() => this.startupTimeout(), 150 * 1000);
+			process.once("SIGINT", () => this.cleanUpResources());
+
 
 			this.server.on("request", (req, res) => {
 				this.hasStarted = true; // again, maybe not the best
@@ -139,7 +141,7 @@ module.exports = ({
 			this.debug("getting chunk indexes");
 			httpStorage.getChunkIndexes(this.dataUri, nTasks)
 				.then(indexArray => {
-					console.log(indexArray);
+					this.debug("%O", indexArray);
 					this.debug("got chunk indexes");
 					for (let i = 0; i < nTasks; i++) this.startTask(indexArray[i]);
 				})
@@ -185,11 +187,12 @@ module.exports = ({
 		}
 
 		cleanUpResources() {
+			this.debug("Cleaning up resources. (it is not advisable to kill this process until complete)");
+			process.on("SIGINT", () => process.exit(1));
 			this.server.close(() => this.debug("http server closed"));
 
 			switch (this.target) {
 				case "gce": {
-					this.debug("Cleaning up GCE resources. (it is not advisable to kill this process until complete)");
 					Promise.all(this.tasks.map(task => task.delete()))
 						.then(() => this.debug("cleaned up"))
 						.catch(console.error);
