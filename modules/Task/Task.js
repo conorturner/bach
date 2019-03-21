@@ -6,8 +6,8 @@ module.exports = ({
 					  LambdaBuilder = require("../TaskBuilders/LambdaBuilder/LambdaBuilder"),
 					  CloudFunctionBuilder = require("../TaskBuilders/CloudFunctionBuilder/CloudFunctionBuilder"),
 					  childProcess = require("child_process"),
-					  uuidv4 = require("uuid/v4")
-
+					  uuidv4 = require("uuid/v4"),
+					  debug = require("debug")
 				  } = {}) => {
 
 	const googleCloud = new GoogleCloud();
@@ -22,6 +22,7 @@ module.exports = ({
 			this.bachfile = bachfile;
 			this.target = target;
 			this.uuid = uuid;
+			this.debug = debug(`task:${uuid}`);
 			this.hasInstance = false; // this is for cloud deployments requiring instance creation
 		}
 
@@ -55,6 +56,8 @@ module.exports = ({
 		}
 
 		run({ env }) { // TODO: add output stream
+			this.debug("starting run");
+
 			switch (this.target) {
 				case "local": {
 					const { cpu, memory } = this.bachfile.hardware;
@@ -66,7 +69,11 @@ module.exports = ({
 						env,
 						entry: "node",
 						entryArgs: [".docker-wrapper.js"]
-					});
+					})
+						.then(result => {
+							this.debug("docker container started");
+							return result;
+						});
 				}
 				case "gcf": {
 					return googleCloud.sendPubSubMessage({
@@ -79,11 +86,18 @@ module.exports = ({
 					const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
 					if (!this.hasInstance) {
 						this.hasInstance = true;
-						return computeEngine.createInstances({ names: [name], env, bachfile: this.bachfile });
+						return computeEngine.createInstances({ names: [name], env, bachfile: this.bachfile })
+							.then((result) => {
+								this.debug("virtual machine created");
+								return result;
+							});
 					}
 
 					return computeEngine.startInstances({ names: [name] })
-						.then(console.log)
+						.then(result => {
+							this.debug("virtual machine started");
+							return result;
+						})
 						.catch(console.error);
 				}
 
@@ -103,7 +117,7 @@ module.exports = ({
 			return cloudFunctionBuilder.deploy(this.bachfile);
 		}
 
-		delete(){
+		delete() {
 			// other resources which require deletion can go here under a switch
 			const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
 			return computeEngine.deleteInstances({ names: [name] })

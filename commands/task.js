@@ -37,10 +37,8 @@ program
 		if (cmd.data) options.dataUri = cmd.data; // run workers in a map reduce style configuration (e.g. they go get their data from elsewhere)
 		if (!process.stdin.isTTY) options.inputStream = process.stdin; // stream stdin of this process into workers
 
-		console.time(`${partition} tiles`);
 		return orchestrator.run(bachfile, options)
 			.then(result => {
-				console.timeEnd(`${partition} tiles`);
 			})
 			.catch(console.error);
 	});

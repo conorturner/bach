@@ -24,8 +24,7 @@ class ComputeEngine {
 		return new Promise((resolve, reject) => {
 			this.childProcess.exec(cmd, (error, stdout, stderr) =>
 				error ? reject(error) : resolve({ stdout: JSON.parse(stdout), stderr }));
-		})
-			.then(() => names.forEach(name => console.log("Created vm:", name)));
+		});
 	}
 
 	startInstances({ names }) {

@@ -2,12 +2,15 @@ module.exports = ({
 					  http = require("http"),
 					  Task = require("../Task/Task")(),
 					  tar = require("tar-fs"),
-					  HttpStorage = require("../Storage/HttpStorage/HttpStorage")
+					  HttpStorage = require("../Storage/HttpStorage/HttpStorage"),
+					  debug = require("debug")
 				  } = {}) => {
 
 	class MapReduceCluster {
 
 		constructor({ bachfile, nTasks, target, callbackAddress, callbackPort = 9001 } = {}) {
+			this.debug = debug("master");
+
 			this.bachfile = bachfile;
 			this.callbackPort = callbackPort;
 			this.callbackAddress = callbackAddress;
@@ -61,10 +64,8 @@ module.exports = ({
 		onTaskComplete() {
 			this.nComplete++;
 			if (this.nComplete === this.tasks.length) {
-				console.log(Buffer.concat(this.buffers).toString());
-				console.log(Object.keys(this.buffers).reduce((acc, buffer) => buffer.length + acc, 0));
-				console.timeEnd("time");
-				this.server.close();
+				// console.log(Buffer.concat(this.buffers).toString());
+				this.debug("all tasks complete");
 				this.cleanUpResources();
 			}
 		}
@@ -85,14 +86,13 @@ module.exports = ({
 		}
 
 		handleCallbackRequest(req, res) {
-			const taskId = MapReduceCluster.getTaskId(req.url);
 			let chunks = [];
 			req.on("data", (data) => {
 				chunks.push(data);
 			});
 
 			req.on("end", () => {
-				this.buffers.push(Buffer.concat(chunks));
+				this.buffers.push(Buffer.concat(chunks)); // this works because results from a map phase can be unordered
 				res.end();
 			});
 		}
@@ -106,12 +106,12 @@ module.exports = ({
 			const targetBytesRead = (task.byteRange.end - task.byteRange.start) + 1; // because end index is inclusive e.g. (start=0, end=1, bytes 0 and 1 are read so n=2)
 
 			if (bytesRead === targetBytesRead) {
-				console.log("Task complete:", taskId);
+				task.debug("task complete");
 				this.onTaskComplete();
 				// TODO: cleanup of resources used for the given task need to be cleared up here e.g. delete/stop vms
 			}
 			else {
-				console.log(`Task preempted with ${targetBytesRead - bytesRead} bytes remaining:`, taskId);
+				task.debug(`preempted with ${targetBytesRead - bytesRead} bytes remaining`);
 				this.startTask({ uuid: taskId, start: task.byteRange.start + bytesRead, end: task.byteRange.end });
 			}
 		}
@@ -124,7 +124,7 @@ module.exports = ({
 			const task = this.getTask({ taskId });
 			const targetBytesRead = (task.byteRange.end - task.byteRange.start) + 1; // because end index is inclusive e.g. (start=0, end=1, bytes 0 and 1 are read so n=2)
 
-			console.log(req.url, `${progress}/${targetBytesRead} (${Math.round((progress / targetBytesRead) * 100)}%)`);
+			task.debug(`${progress}/${targetBytesRead} (${Math.round((progress / targetBytesRead) * 100)}%)`);
 		}
 
 		static getTaskId(url) {
@@ -136,11 +136,11 @@ module.exports = ({
 		startTasks(nTasks) {
 			const httpStorage = new HttpStorage();
 
-			console.time("httpStorage.getChunkIndexes");
+			this.debug("getting chunk indexes");
 			httpStorage.getChunkIndexes(this.dataUri, nTasks)
 				.then(indexArray => {
 					console.log(indexArray);
-					console.timeEnd("httpStorage.getChunkIndexes");
+					this.debug("got chunk indexes");
 					for (let i = 0; i < nTasks; i++) this.startTask(indexArray[i]);
 				})
 				.catch(error => console.error("error starting tasks", error));
@@ -171,7 +171,7 @@ module.exports = ({
 		}
 
 		run({ dataUri }) {
-			console.time("time");
+			this.debug("running");
 			this.dataUri = dataUri;
 			this.server.listen(this.callbackPort);
 			return Promise.resolve(); // await end event
@@ -179,16 +179,19 @@ module.exports = ({
 
 		startupTimeout() {
 			if (!this.hasStarted) {
-				console.log("timeout on startup");
+				this.debug("timeout on startup");
 				this.cleanUpResources();
 			}
 		}
 
 		cleanUpResources() {
+			this.server.close(() => this.debug("http server closed"));
+
 			switch (this.target) {
 				case "gce": {
+					this.debug("Cleaning up GCE resources. (it is not advisable to kill this process until complete)");
 					Promise.all(this.tasks.map(task => task.delete()))
-						.then(() => console.log("cleaned up"))
+						.then(() => this.debug("cleaned up"))
 						.catch(console.error);
 				}
 			}

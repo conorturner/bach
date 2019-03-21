@@ -26,6 +26,7 @@
     "binary-split": "^1.0.5",
     "chalk": "^2.4.2",
     "commander": "^2.19.0",
+    "debug": "^4.1.1",
     "figlet": "^1.2.1",
     "inquirer": "^6.2.1",
     "passthrough-counter": "^1.0.0",
