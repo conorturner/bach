@@ -17,7 +17,8 @@ class ComputeEngine {
 			`--custom-cpu ${bachfile.hardware.cpu}`,
 			`--custom-memory ${bachfile.hardware.memory}MB`,
 			"--format json",
-			`--metadata startup-script="${startupScript}",shutdown-script="${shutdownScript}"`
+			`--metadata startup-script="${startupScript}",shutdown-script="${shutdownScript}"`,
+			"--no-address"
 		];
 		const cmd = `gcloud compute instances create ${names.join(" ")} ${flags.join(" ")}`;
 

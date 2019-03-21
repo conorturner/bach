@@ -56,12 +56,11 @@ module.exports = ({
 		}
 
 		run({ env }) { // TODO: add output stream
-			this.debug("starting run");
-
 			switch (this.target) {
 				case "local": {
 					const { cpu, memory } = this.bachfile.hardware;
 
+					this.debug("starting docker container");
 					return Docker.run({
 						tag: `bach-${ this.bachfile["logical-name"] }:latest`,
 						cpu,

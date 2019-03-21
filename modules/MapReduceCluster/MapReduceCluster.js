@@ -189,15 +189,24 @@ module.exports = ({
 		cleanUpResources() {
 			this.debug("Cleaning up resources. (it is not advisable to kill this process until complete)");
 			process.on("SIGINT", () => process.exit(1));
-			this.server.close(() => this.debug("http server closed"));
 
-			switch (this.target) {
-				case "gce": {
-					Promise.all(this.tasks.map(task => task.delete()))
-						.then(() => this.debug("cleaned up"))
-						.catch(console.error);
+			this.server.close(() => {
+				this.debug("http server closed");
+
+				switch (this.target) {
+					case "gce": {
+						Promise.all(this.tasks.map(task => task.delete()))
+							.then(() => this.debug("cleaned up"))
+							.catch(console.error);
+						break;
+					}
+					case "local": {
+						this.debug("cleaned up");
+						process.exit(0);
+						break;
+					}
 				}
-			}
+			});
 		}
 	}
 
