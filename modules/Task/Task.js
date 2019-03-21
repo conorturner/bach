@@ -86,6 +86,7 @@ module.exports = ({
 					const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
 					if (!this.hasInstance) {
 						this.hasInstance = true;
+						this.debug("creating virtual machine");
 						return computeEngine.createInstances({ names: [name], env, bachfile: this.bachfile })
 							.then((result) => {
 								this.debug("virtual machine created");
@@ -93,6 +94,7 @@ module.exports = ({
 							});
 					}
 
+					this.debug("starting virtual machine");
 					return computeEngine.startInstances({ names: [name] })
 						.then(result => {
 							this.debug("virtual machine started");
