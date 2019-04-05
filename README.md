@@ -40,62 +40,7 @@ Run a map reduce style task (in the cloud)
 bach task-run --ip 35.234.147.231 --data https://storage.googleapis.com/datasets-ew2/GDELT.DAT -p 50 -t gce
 ```
 
-## Task Definitions
-
-#### Run a task that will run until completion and can tolerate being interrupted.
-```json
-{
-  "logical-name": "json-searcher",
-  "interruptible": true,
-  "binary": "node",
-  "args": [
-    "bin.js"
-  ],
-  "delimiter": "\n",
-  "hardware": {
-    "cpu": {
-      "min": 0.1,
-      "max": 2
-    },
-    "memory": {
-      "min": 128,
-      "max": 256
-    },
-    "disk": {
-      "min": "1g"
-    },
-    "graphics": null,
-    "network": null
-  }
-}
-```
-
-## Program interface
-
-- Data will be streamed into the program and the output of its mapping operation will be streamed to stdout.
-- Data sent to stderr will cause abnormal termination (ability to turn this off).
-- If a mapper type task is interrupted it will be restarted from start of the current chunk, meaning outputs must be push to stdout only when a chunk is complete, external state could be maintained.
-- When streaming a tcp connection will be made from child nodes to parent to carry both up and down stream data
-
-## Co-location of data
-
-- To allow for the most stateless operation data storage should consist of page per gb abstract storage.
-- Data can be pre-tiled before upload to allow for easy chunking.
-
-## Event driven architecture
-1. `$ bach task run`
-2. Check if topics/cloud storage are created
-    a. If not, create them and upload dataset (if local uri)
-    b. If dataset exists in cloud check hash file(s) for freshness, if need be reupload.
-    c. create build/input/output/report storage buckets
-    d. if dataset is distributed simply stream directly from remote servers.
-4. On upload to code storage an event triggers execution of code and simultaneously triggers a execution.json file in the report folder.
-    a. if abstract runtime e.g. nodejs, java, exe. Send code uri to            function and download code and execute in nodevm etc.
-    b. if docker image run with sdtin as a pipe from the relevant          command line command e.g. `$ bach storage get $LOGICAL_ID`
-5. Run program and pipe outputs into output bucket which will trigger an event placing a report.json file in a report storage.
-6. If the program is interrupted it will create a interrupt.json which will trigger an event which will restart the program based on the interrupt report.
-7. `$ bach task report`
-8. Check report.json files against execution.json file to determine the state of the system. Report as necessary.
+Good video https://www.youtube.com/watch?v=tPaW8aBX94k
 
 ## Datasets
 

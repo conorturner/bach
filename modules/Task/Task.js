@@ -26,35 +26,6 @@ module.exports = ({
 			this.hasInstance = false; // this is for cloud deployments requiring instance creation
 		}
 
-		build({ path }) {
-			// deprecated
-			if (!this.bachfile) {
-				console.log(".build called without bachfile");
-				return Promise.resolve();
-			}
-
-			// Clean build folder.
-			childProcess.execSync(`rm -rf ${ path }/build`);
-			childProcess.execSync(`mkdir ${ path }/build`);
-
-			switch (this.target) {
-				case "docker": {
-					const dockerBuilder = new DockerBuilder({ path });
-					return dockerBuilder.build(this.bachfile);
-				}
-				case "lambda": {
-					throw new Error("not implemented");
-					// const lambdaBuilder = new LambdaBuilder({ path });
-					// return lambdaBuilder.build(bachfile);
-				}
-				case "gcf": {
-					const cloudFunctionBuilder = new CloudFunctionBuilder({ path });
-					return cloudFunctionBuilder.build(this.bachfile);
-				}
-
-			}
-		}
-
 		run({ env }) { // TODO: add output stream
 			switch (this.target) {
 				case "local": {

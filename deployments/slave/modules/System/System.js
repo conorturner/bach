@@ -3,28 +3,26 @@ class System {
 	constructor({ os = require("os") } = {}) {
 		this.os = os;
 		this.sysTrace = [];
+		this.previousCpu = this.os.cpus();
 	}
 
-	record({ interval = 100 } = {}) {
-		let previous;
-		this.interval = setInterval(() => {
+	start({ interval = 100 } = {}) {
+		this.interval = setInterval(() => this.record(), interval);
+	}
 
-			if (!previous) {
-				previous = this.os.cpus();
-				return;
+	record(){
+		const usage = {
+			cpuTime: this.getCpuUsage(this.previousCpu),
+			mem: {
+				free: this.os.freemem(),
+				total: this.os.totalmem()
 			}
+		};
 
-			this.sysTrace.push({
-				cpuTime: this.getCpuUsage(previous),
-				mem: {
-					free: this.os.freemem(),
-					total: this.os.totalmem()
-				}
-			});
+		this.sysTrace.push(usage);
+		this.previousCpu = this.os.cpus();
 
-			previous = this.os.cpus();
-
-		}, interval);
+		return usage;
 	}
 
 	stop() {
@@ -32,10 +30,14 @@ class System {
 	}
 
 	report() {
-		return this.sysTrace.map(({ cpuTime, mem }) => ({
+		return this.sysTrace.map(usage => this.getPercentages(usage));
+	}
+
+	getPercentages({ cpuTime, mem }){
+		return {
 			cpuUsage: (1 - cpuTime.idle / (cpuTime.user + cpuTime.sys + cpuTime.idle + cpuTime.nice + cpuTime.irq)) * 100,
 			memUsage: (1 - mem.free / mem.total) * 100
-		}));
+		};
 	}
 
 	getCpuUsage(previous) {

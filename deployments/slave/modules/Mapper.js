@@ -1,4 +1,5 @@
 const StorageReadable = require("./StorageReadable");
+const System = require("./System/System");
 
 class Mapper {
 	constructor(
@@ -13,6 +14,8 @@ class Mapper {
 		this.ARGS = ARGS;
 		this.request = request;
 		this.childProcess = childProcess;
+
+		this.system = new System();
 	}
 
 	readStorage() {
@@ -89,9 +92,11 @@ class Mapper {
 	}
 
 	heartbeat(progress) {
+		const { cpuUsage: cpu, memUsage: mem } = this.system.getPercentages(this.system.record());
+
 		this.request({
 			uri: `${this.CALLBACK_ENDPOINT}/heartbeat`,
-			headers: { progress },
+			headers: { progress, cpu, mem },
 			json: true
 		})
 			.catch(error => {

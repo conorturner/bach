@@ -125,8 +125,9 @@ module.exports = ({
 			const progress = parseInt(req.headers.progress, 10);
 			const task = this.getTask({ taskId });
 			const targetBytesRead = (task.byteRange.end - task.byteRange.start) + 1; // because end index is inclusive e.g. (start=0, end=1, bytes 0 and 1 are read so n=2)
+			const percentageComplete = Math.round((progress / targetBytesRead) * 100);
 
-			task.debug(`${progress}/${targetBytesRead} (${Math.round((progress / targetBytesRead) * 100)}%)`);
+			task.debug(`cpu=${req.headers.cpu}% mem=${req.headers.mem}% progress=${progress}/${targetBytesRead} (${percentageComplete}%)`);
 		}
 
 		static getTaskId(url) {

@@ -1,14 +1,8 @@
 // Classes
-const Task = require("../Task/Task.js")();
-const LocalStorage = require("../Storage/LocalStorage/LocalStorage");
 const StreamCluster = require("../StreamCluster/StreamCluster");
 const MapReduceCluster = require("../MapReduceCluster/MapReduceCluster")();
 
 class Orchestrator {
-
-	constructor({ localStorage = new LocalStorage() } = {}) {
-		this.localStorage = localStorage;
-	}
 
 	run(bachfile, options) {
 

@@ -1,6 +1,3 @@
-const inquirer = require("inquirer");
-const chalk = require("chalk");
-const figlet = require("figlet");
 const program = require("commander");
 
 // Classes
@@ -39,39 +36,6 @@ program
 
 		return orchestrator.run(bachfile, options)
 			.then(result => {
-			})
-			.catch(console.error);
-	});
-
-program
-	.command("task-build")
-	.option("-t, --target <target>", "Specify target docker|gcf")
-	.action((cmd) => {
-		const path = process.cwd();
-		const bachfile = Task.readBachfile(path);
-		if (!bachfile) return console.error("Unable to find bachfile:", `${path}/bachfile.json`);
-		const { target = "docker" } = cmd;
-
-		const task = new Task({ target, bachfile });
-
-		console.time("- build");
-		task.build({ path })
-			.then(result => console.timeEnd("- build"))
-			.catch(console.error);
-	});
-
-program
-	.command("task-deploy")
-	.option("-t, --target <target>", "Specify target docker|gcf")
-	.action((action, cmd) => {
-
-		console.time("task-deploy");
-		const task = new Task({ target: null });
-
-		task.deploy({ path: process.cwd() })
-			.then(result => {
-				console.timeEnd("task-deploy");
-				// console.log(result.stdout);
 			})
 			.catch(console.error);
 	});
