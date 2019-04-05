@@ -40,7 +40,8 @@ Run a map reduce style task (in the cloud)
 bach task-run --ip 35.234.147.231 --data https://storage.googleapis.com/datasets-ew2/GDELT.DAT -p 50 -t gce
 ```
 
-Good video https://www.youtube.com/watch?v=tPaW8aBX94k
+Good video on spot instances https://www.youtube.com/watch?v=tPaW8aBX94k
+This may allow for using docker to handle the preemption interrupt `--sig-proxy=false`
 
 ## Datasets
 

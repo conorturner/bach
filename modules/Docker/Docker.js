@@ -3,22 +3,30 @@
 module.exports = ({ // Injectable dependencies
 					  request = require("request-promise-native"),
 					  childProcess = require("child_process"),
-					  tar = require("tar-fs"),
-					  http = require("http"),
-					  split = require("binary-split")
 				  } = {}) => {
 
 	class Docker {
 
-		static run({ tag, env, cpu, memory }) {
+		static runLocal({ env, cpu, memory }) {
+			const envArgs = Object.keys(env).map(key => `-e ${key}=${JSON.stringify(env[key])}`).join(" ");
 
+			const cmd = `docker run ${envArgs} -d --cpu-quota=${cpu * 100000} --memory ${memory}m conorturner/bach-slave`;
+
+			return new Promise((resolve, reject) => {
+				childProcess.exec(cmd, (error, stdout, stderr) =>
+					error ? reject(error) : resolve({ stdout, stderr }));
+			});
+		}
+
+		static runRemote({ tag, env, cpu, memory, remoteHost }) {
+			// TODO: pass in remote host e.g. http://strider.local:2375
 			const create = () => {
 				const options = {
 					method: "POST",
 					url: "http://strider.local:2375/v1.24/containers/create",
 					body: {
 						Image: "conorturner/bach-slave",
-						Env: Object.keys(env).map(key => `${ key }=${ env[key] }`),
+						Env: Object.keys(env).map(key => `${key}=${env[key]}`),
 						// name: tag,
 						AttachStdout: true,
 						AttachStdin: true,
@@ -49,13 +57,18 @@ module.exports = ({ // Injectable dependencies
 
 				const options = {
 					method: "POST",
-					url: `http://strider.local:2375/v1.24/containers/${ Id }/start`
+					url: `http://strider.local:2375/v1.24/containers/${Id}/start`
 				};
 
 				return request(options);
 			};
 
 			return create().then(start);
+		}
+
+		static run({ tag, env, cpu, memory, remoteHost }) {
+			if (remoteHost) return Docker.runRemote({ tag, env, cpu, memory, remoteHost });
+			else return Docker.runLocal({ env, cpu, memory });
 		}
 
 	}

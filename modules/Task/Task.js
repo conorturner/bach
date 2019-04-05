@@ -2,9 +2,6 @@ module.exports = ({
 					  Docker = require("../Docker/Docker")(),
 					  GoogleCloud = require("../GoogleCloud/GoogleCloud"),
 					  ComputeEngine = require("../ComputeEngine/ComputeEngine"),
-					  DockerBuilder = require("../TaskBuilders/DockerBuilder/DockerBuilder"),
-					  LambdaBuilder = require("../TaskBuilders/LambdaBuilder/LambdaBuilder"),
-					  CloudFunctionBuilder = require("../TaskBuilders/CloudFunctionBuilder/CloudFunctionBuilder"),
 					  childProcess = require("child_process"),
 					  uuidv4 = require("uuid/v4"),
 					  debug = require("debug")
@@ -29,7 +26,8 @@ module.exports = ({
 		run({ env }) { // TODO: add output stream
 			switch (this.target) {
 				case "local": {
-					const { cpu, memory } = this.bachfile.hardware;
+					const { hardware } = this.bachfile;
+					const { cpu, memory } = hardware;
 
 					this.debug("starting docker container");
 					return Docker.run({
@@ -77,16 +75,6 @@ module.exports = ({
 					throw new Error("Unknown runtime target");
 				}
 			}
-		}
-
-		deploy({ path }) {
-			if (!this.bachfile) {
-				console.log("unable to find bachfile in path");
-				return Promise.resolve();
-			}
-
-			const cloudFunctionBuilder = new CloudFunctionBuilder({ path });
-			return cloudFunctionBuilder.deploy(this.bachfile);
 		}
 
 		delete() {
