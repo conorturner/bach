@@ -23,7 +23,7 @@ Stream input
 ```bash
 $ curl -s https://storage.googleapis.com/public-stuff/GDELT.dat | bach task-run -p 8
 ```
-This command will build and run the containers on xx.56 while telling them to call back to xx.10 for data streams
+This command will run the containers on xx.56 while telling them to call back to xx.10 for data streams
 ```bash
 head -n 10000000 GDELT.dat | bach task-run -p 4 --ip 192.168.0.10 --lb 4
 ```

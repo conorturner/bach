@@ -27,7 +27,7 @@ module.exports = ({ // Injectable dependencies
 							CpuQuota: 100000 * cpu,
 							CpuPeriod: 100000,
 							Memory: memory * 1e6,
-							MemorySwap: -1 // unlimited swap
+							MemorySwap: memory * 1e6
 						}
 					},
 					json: true
@@ -56,32 +56,6 @@ module.exports = ({ // Injectable dependencies
 			};
 
 			return create().then(start);
-		}
-
-		static build({ tag, file, workdir }) {
-			const tarStream = tar.pack(`${ workdir }`);
-
-			const options = {
-				hostname: "strider.local",
-				port: 2375,
-				path: `/v1.24/build?t=${tag}`,
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-tar"
-				}
-			};
-
-			return new Promise(resolve => {
-				const req = http.request(options, (res) => {
-					console.log(`STATUS: ${ res.statusCode }`);
-					res.pipe(split("\n")).on("data", (data) => console.log(JSON.parse(data.toString()).stream.trim()));
-					res.on("close", () => resolve());
-				});
-
-				req.on("error", (e) => console.error(`problem with request: ${ e.message }`));
-
-				tarStream.pipe(req);
-			});
 		}
 
 	}
