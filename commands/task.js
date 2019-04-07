@@ -4,9 +4,6 @@ const program = require("commander");
 const Task = require("../modules/Task/Task.js")();
 const Orchestrator = require("../modules/Orchestrator/Orchestrator");
 
-// Instances
-const orchestrator = new Orchestrator();
-
 // User Interface
 program
 	.command("task-run")
@@ -34,7 +31,7 @@ program
 		if (cmd.data) options.dataUri = cmd.data; // run workers in a map reduce style configuration (e.g. they go get their data from elsewhere)
 		if (!process.stdin.isTTY) options.inputStream = process.stdin; // stream stdin of this process into workers
 
-		return orchestrator.run(bachfile, options)
+		return Orchestrator.run(bachfile, options)
 			.then(result => {
 			})
 			.catch(console.error);

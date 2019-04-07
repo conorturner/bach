@@ -79,8 +79,8 @@ describe("Test Docker Wrapper", () => {
 			}
 		});
 
-		const cmd = `docker run -e CALLBACK_ENDPOINT=http://192.168.0.10:${PORT}/uuid-1234 bach-slave`;
-		// const cmd = `CALLBACK_ENDPOINT=http://localhost:${PORT}/uuid-1234 node index`;
+		// const cmd = `docker run -e CALLBACK_ENDPOINT=http://192.168.0.10:${PORT}/uuid-1234 bach-slave`;
+		const cmd = `CALLBACK_ENDPOINT=http://localhost:${PORT}/uuid-1234 node index`;
 
 		childProcess.exec(cmd, (err, stdout, stderr) => {
 			if (err) return console.error(err);
