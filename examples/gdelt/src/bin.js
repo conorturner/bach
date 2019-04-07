@@ -591,6 +591,8 @@ process.stdin.on("readable", () => {
 					acc[EVENTDESCRIPTION] = acc[EVENTDESCRIPTION] || 0;
 					acc[EVENTDESCRIPTION]++;
 				}
+
+				console.log(NumEvents)
 			}
 			catch (e) {
 				console.log(unit);

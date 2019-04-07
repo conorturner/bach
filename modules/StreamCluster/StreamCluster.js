@@ -1,72 +1,50 @@
 // Classes
 const { Writable } = require("stream");
 const os = require("os");
+const cluster = require("cluster");
 const Task = require("../Task/Task.js")();
+const debug = require("debug");
 
 class StreamCluster extends Writable {
 
-	constructor({ target, bachfile, callbackAddress, nWorkers = os.cpus().length }, { cluster = require("cluster") } = {}) {
+	constructor({ target, bachfile, callbackAddress, nWorkers = os.cpus().length } = {}) {
 		super();
 
-		cluster.setupMaster({
-			exec: __dirname + "/modules/LoadBalancerWorker/LoadBalancerWorker.js",
-			stdio: ["pipe", process.stdout, process.stderr, "ipc"]
-		});
-
-		const PORT = 9001;
-
-		const workers = new Array(nWorkers).fill(null).map(() => cluster.fork({ PORT }));
-		workers.forEach(worker => {
-			worker.on("message", (message) => this.handleWorkerMessage(message));
-		});
-
+		this.debug = debug("master");
 		this.bachfile = bachfile;
 		this.target = target;
 		this.callbackAddress = callbackAddress;
-		this.nodes = [];
+		this.tasks = [];
 
-		this.PORT = PORT;
+		this.callbackPort = 9001;
 		this.roundRobin = 0;
 		this.isListening = false;
-		this.workers = workers;
-		this.activeWorkers = [];
-		this.bytesProxied = 0;
+		this.loadBalancers = this.spawnWorkers(nWorkers);
 		this.nSockets = 0;
 		this.remainder = Buffer.alloc(0);
 	}
 
-	setDesiredNodes(desiredNodes) {
-		const { loadBalancer } = this;
-
+	setDesiredConcurrency(desiredNodes) {
 		const set = () => {
-			const delta = desiredNodes - this.nodes;
+			const delta = desiredNodes - this.tasks;
 			if (delta > 0) for (let i = 0; i < delta; i++) this.addNode();
 		};
 
-		if (loadBalancer.isListening) set();
-		else loadBalancer.once("listening", () => set());
+		if (this.isListening) set();
+		else this.once("listening", () => set()); // wait for at least one lb to be listening
 	}
 
 	addNode() {
-		const { loadBalancer, bachfile, target, callbackAddress } = this;
-
-		const env = {
-			INPUT_TYPE: "tcp",
-			BINARY: bachfile.binary,
-			ARGS: target === "local" ? JSON.stringify(bachfile.args) : bachfile.args,
-			SOURCE_HOST: callbackAddress,
-			SOURCE_PORT: loadBalancer.PORT
-		};
-
+		const { bachfile, target } = this;
 		const task = new Task({ bachfile, target });
+		const env = { CALLBACK_ENDPOINT: `http://${this.callbackAddress}:${this.callbackPort}/${task.uuid}` };
+
 		task.run({ bachfile, env }).catch(err => console.error(err));
-		this.nodes.push(task);
+		this.tasks.push(task);
 	}
 
 	_write(chunk, encoding, callback) { // chunks are sections binary streams of tuples
-		this.bytesProxied += chunk.length; // count total just for reporting purposes
-
-		this.awaitWritableWorker()
+		this.awaitWritableLoadBalancer()
 			.then((worker) => {
 				this.writeChunk({ worker, chunk, encoding, callback });
 			})
@@ -84,7 +62,7 @@ class StreamCluster extends Writable {
 			this.remainder = chunk.slice(index + delimiter.length, chunk.length); // maintain remainder
 
 			const ok = worker.process.stdin.write(buffer, encoding);
-			if (!ok) worker.process.stdin.once("drain", () => this.emit("workerDrain", worker));
+			if (!ok) worker.process.stdin.once("drain", () => this.emit("lbDrain", worker));
 			callback();
 		}
 		catch (e) {
@@ -94,69 +72,118 @@ class StreamCluster extends Writable {
 
 	}
 
-	awaitWritableWorker() { // this is probably over complex and covers edge cases which do not exists
+	awaitWritableLoadBalancer() { // this is probably over complex and covers edge cases which do not exists
 		const waitOnce = (event) => new Promise((resolve, reject) => {
 			const timeout = setTimeout(reject, 2 * 60 * 1000);
 			this.once(event, () => {
 				clearTimeout(timeout);
-				this.awaitWritableWorker().then(resolve).catch(reject);
+				this.awaitWritableLoadBalancer().then(resolve).catch(reject);
 			});
 		});
 
 		const writableWorker = this.getNextWorker();
 
 		if (writableWorker) return Promise.resolve(writableWorker); // if worker is free return it
-		else if (this.activeWorkers.length !== 0) return waitOnce("workerDrain"); // if there are some workers but everyone needs to drain
-		else return waitOnce("workerOpen"); // No workers yet, wait for one to open
+		else if (this.loadBalancers.length !== 0) return waitOnce("lbDrain"); // if there are some workers but everyone needs to drain
+		else return waitOnce("lbReady"); // No workers yet, wait for one to open
 	}
 
 	getNextWorker() {
-		if (this.activeWorkers.length === 0) return;
+		if (this.loadBalancers.length === 0) return;
 
 		// round robin each worker to see if they are ready to take input, check each worker once and if none, return null
-		for (let i = 0; i < this.activeWorkers.length; i++) {
-			this.roundRobin = (this.roundRobin + 1) % this.activeWorkers.length;
-			const { needDrain } = this.activeWorkers[this.roundRobin].process.stdin._writableState;
-			if (!needDrain) return this.activeWorkers[this.roundRobin];
+		for (let i = 0; i < this.loadBalancers.length; i++) {
+			this.roundRobin = (this.roundRobin + 1) % this.loadBalancers.length;
+			const { needDrain } = this.loadBalancers[this.roundRobin].process.stdin._writableState;
+			if (!needDrain) return this.loadBalancers[this.roundRobin];
 		}
-	}
-
-	_final(callback) {
-
-		// this is called when input pipe has finished - NOT when the tcp pipes are done
-		const workers = this.workers.concat(this.activeWorkers);
-		workers.forEach(worker => worker.process.stdin.end()); // send end of stream to tasks
-		Promise.all(workers.map(worker => new Promise(resolve => worker.on("exit", resolve))))
-			.then(() => {
-				console.error((this.bytesProxied / 1e6) * 8 * 1000);
-				// this.emit("close");
-				callback();
-			})
-			.catch(err => {
-				console.error(err);
-				callback();
-			});
 	}
 
 	handleWorkerMessage(message) {
 		switch (message.event) {
 			case "listening": {
 				this.isListening = true;
-				this.emit("listening");
+				this.emit("listening"); // each load balancer process will emit this once
 				break;
 			}
-			case "socketOpen": {
-				const workerIndex = this.workers.findIndex((worker) => worker.process.pid === message.pid);
-				if (workerIndex !== -1) {
-					this.activeWorkers.push(this.workers[workerIndex]);
-					this.workers.splice(workerIndex, 1);
-				}
-				this.nSockets++;
-				this.emit("workerOpen");
-				console.error(`PID:${message.pid} - SOCKET:${this.nSockets}`);
+			case "downStreamRequest": {
+				const { pid, taskId } = message;
+				const task = this.getTask({ taskId });
+				task.debug(`downStreamRequest lb=${pid}`);
+				// mark task as running - also maybe mark the pid owning the request
+				break;
+			}
+			case "downStreamRequestEnd": {
+				const { pid, taskId } = message;
+				const task = this.getTask({ taskId });
+				task.debug(`downStreamRequestEnd lb=${pid}`);
+				// restart task
+				const env = { CALLBACK_ENDPOINT: `http://${this.callbackAddress}:${this.callbackPort}/${task.uuid}` };
+				task.run({ bachfile: this.bachfile, env }).catch(err => console.error(err));
+
+				break;
+			}
+			case "upStreamRequest": {
+				const { pid, taskId } = message;
+				const task = this.getTask({ taskId });
+				task.lbPid = pid; // used later when messaging LB to close upstream connection
+				task.debug(`upStreamRequest lb=${pid}`);
+
+				this.emit("lbReady");
+				break;
+			}
+			case "upStreamRequestEnd": {
+				const { pid, taskId } = message;
+				const task = this.getTask({ taskId });
+				task.debug(`upStreamRequestEnd lb=${pid}`);
+				break;
+			}
+			case "close": {
+				const { pid, taskId } = message;
+				const task = this.getTask({ taskId });
+				const lb = this.getLoadBalancer({ pid });
+
+				task.debug(`close request lb=${pid} downStreamLbPid=${task.lbPid}`);
+				lb.process.send({ event: "close", taskId });
+				break;
+			}
+			case "config": {
+				const { pid, taskId } = message;
+				const task = this.getTask({ taskId });
+				task.debug(`config request lb=${pid}`);
+				break;
+			}
+			case "heartbeat": {
+				const { pid, taskId, cpu, mem } = message;
+				const task = this.getTask({ taskId });
+				if (!taskId) return;
+				task.debug(`cpu=${cpu}% mem=${mem}% lb-pid=${pid}`);
 				break;
 			}
 		}
+	}
+
+	spawnWorkers(nWorkers) {
+		cluster.setupMaster({
+			exec: __dirname + "/modules/LoadBalancerWorker/LoadBalancerWorker.js",
+			stdio: ["pipe", process.stdout, process.stderr, "ipc"]
+		});
+
+		return new Array(nWorkers).fill(null).map(() => {
+			const worker = cluster.fork({ PORT: this.callbackPort, BACHFILE: JSON.stringify(this.bachfile) });
+			worker.on("message", (message) => this.handleWorkerMessage(message));
+			return worker;
+		});
+	}
+
+	getTask({ taskId }) {
+		const taskIndex = this.tasks.findIndex(({ uuid }) => uuid === taskId);
+		return this.tasks[taskIndex];
+	}
+
+	getLoadBalancer({ pid }) {
+		const index = this.loadBalancers.findIndex((lb) => lb.process.pid === pid);
+		return this.loadBalancers[index];
 	}
 
 }

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node index.js",
-    "bp": "docker build -t conorturner/bach-slave . && docker push conorturner/bach-slave:latest"
+    "bp": "docker build -t conorturner/bach-slave . && docker push conorturner/bach-slave:latest",
+    "build": "docker build -t conorturner/bach-slave ."
   }
 }

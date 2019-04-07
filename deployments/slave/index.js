@@ -2,6 +2,7 @@ const { CALLBACK_ENDPOINT } = process.env;
 
 const Slave = require("./modules/Slave");
 const Mapper = require("./modules/Mapper");
+const Streamer = require("./modules/Streamer");
 const slave = new Slave({ CALLBACK_ENDPOINT });
 
 slave.init()
@@ -14,7 +15,8 @@ slave.init()
 				return mapper.run();
 			}
 			case "stream": {
-				break;
+				const streamer = new Streamer({ CALLBACK_ENDPOINT, BINARY, ARGS });
+				return streamer.start();
 			}
 			default: {
 				break;

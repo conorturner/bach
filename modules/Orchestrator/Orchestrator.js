@@ -27,8 +27,10 @@ class Orchestrator {
 
 	static runStreamCluster(bachfile, { inputStream, partition, target, ip, lb }) {
 		const streamCluster = new StreamCluster({ target, bachfile, callbackAddress: ip, nWorkers: lb });
-		streamCluster.setDesiredNodes(partition); // TODO: if partition is set to 'auto' - scale partitions up and down based on input buffer length/some other constraint
-		return inputStream.pipe(streamCluster);
+		streamCluster.setDesiredConcurrency(partition); // TODO: if partition is set to 'auto' - scale partitions up and down based on input buffer length/some other constraint
+		inputStream.pipe(streamCluster);
+
+		return Promise.resolve();
 	}
 }
 
