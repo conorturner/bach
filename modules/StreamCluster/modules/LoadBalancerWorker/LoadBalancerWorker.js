@@ -49,6 +49,7 @@ class LoadBalancerWorker extends Writable {
 				}
 			}
 		});
+
 		this.remainder = Buffer.alloc(0);
 	}
 
@@ -104,7 +105,6 @@ class LoadBalancerWorker extends Writable {
 	}
 
 	getNextConnection() {
-		//TODO: ensure this works with http sockets
 		if (this.upstreamConnections.length === 0) return;
 
 		for (let i = 0; i < this.upstreamConnections.length; i++) {
@@ -137,7 +137,7 @@ class LoadBalancerWorker extends Writable {
 		const taskId = LoadBalancerWorker.getTaskId(req.url);
 		// pipe data BACK from this connection
 		process.send({ event: "downStreamRequest", pid: process.pid, taskId });
-		req.on("data", (data) => data);
+		req.on("data", (data) => process.stdout.write(data));
 		req.on("end", () => {
 			// when this request closes, notify the master to close the upstream connection
 			process.send({ event: "downStreamRequestEnd", pid: process.pid, taskId });
@@ -195,7 +195,6 @@ class LoadBalancerWorker extends Writable {
 		this.upstreamConnections.splice(idx, 1); // remove from array before ending to ensure no write after end errors
 		con.end();
 	}
-
 
 }
 

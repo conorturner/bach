@@ -25,7 +25,13 @@ program
 		else if (cmd.data) type = "block";
 		else type = "unknown";
 
-		const options = { type, target, partition: parseInt(partition, 10), ip, lb: lb ? parseInt(lb, 10) : null };
+		const options = {
+			type,
+			target,
+			partition: parseInt(partition, 10),
+			ip,
+			lb: lb ? parseInt(lb, 10) : null
+		};
 
 		if (cmd.data && !process.stdin.isTTY) return console.log("Cannot specify both data and pipe input");
 		if (cmd.data) options.dataUri = cmd.data; // run workers in a map reduce style configuration (e.g. they go get their data from elsewhere)

@@ -8,7 +8,7 @@ const debug = require("debug");
 class StreamCluster extends Writable {
 
 	constructor({ target, bachfile, callbackAddress, nWorkers = os.cpus().length } = {}) {
-		super();
+		super({ highWaterMark: 1024 * 100 });
 
 		this.debug = debug("master");
 		this.bachfile = bachfile;
@@ -22,6 +22,12 @@ class StreamCluster extends Writable {
 		this.loadBalancers = this.spawnWorkers(nWorkers);
 		this.nSockets = 0;
 		this.remainder = Buffer.alloc(0);
+
+		setInterval(() => {
+			const desiredSize = 65536;
+			const diff = this._writableState.length - desiredSize;
+			console.error(diff);
+		}, 500);
 	}
 
 	setDesiredConcurrency(desiredNodes) {
@@ -156,7 +162,7 @@ class StreamCluster extends Writable {
 			case "heartbeat": {
 				const { pid, taskId, cpu, mem } = message;
 				const task = this.getTask({ taskId });
-				if (!taskId) return;
+				if (!task) return; // if anything lingers
 				task.debug(`cpu=${cpu}% mem=${mem}% lb-pid=${pid}`);
 				break;
 			}

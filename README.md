@@ -1,49 +1,50 @@
 # Bach
-Orchestrate a vendor agnostic cloud.
 
-## Usage (so far)
+Orchestrate a cluster of preemptible virtual machines on google compute engine.
 
-When cloning from github
-```bash
-$ npm link
-```
-From within the same folder as a bachfile.json
-```bash
-$ bach task-build
-```
-Where citylots.features.dat is a file in the current directory
-```bash
-$ bach task-run --data citylots.features.dat -p 8
-```
-Stream input
-```bash
-$ cat citylots.features.dat | bach task-run -p 8
-```
-Stream input
-```bash
-$ curl -s https://storage.googleapis.com/public-stuff/GDELT.dat | bach task-run -p 8
-```
-This command will run the containers on xx.56 while telling them to call back to xx.10 for data streams
-```bash
-head -n 10000000 GDELT.dat | bach task-run -p 4 --ip 192.168.0.10 --lb 4
-```
-^ following link explains how to allow docker clients from remote connections
-https://docs.docker.com/install/linux/linux-postinstall/#configure-where-the-docker-daemon-listens-for-connections
+## Prerequisites
 
-Run a map reduce style task
+- Node.js
+  - Installing node and npm
+  - Running as a command line tool
+- Docker
+  - Setting up docker to run on local machine
+  - Setting up a docker host on a local subnet
+- Google Cloud CLI
+  - Get started with Google Cloud
+- Slave docker/vm image
+
+## Installation
+
+### Install via npm
 ```bash
-DEBUG=* bach task-run --ip 192.168.0.10 --data https://storage.googleapis.com/datasets-ew2/GDELT.DAT -p 32
+npm i <tbc> -g
+```
+### Install from source
+Linking will allow changes made to thee source code to be immediately reflected in the tool.
+```bash
+git clone https://github.com/conorturner/bach.git && \
+cd bach && \
+npm link
 ```
 
-Run a map reduce style task (in the cloud)
-```bash
-bach task-run --ip 35.234.147.231 --data https://storage.googleapis.com/datasets-ew2/GDELT.DAT -p 50 -t gce
-```
 
-Good video on spot instances https://www.youtube.com/watch?v=tPaW8aBX94k
-This may allow for using docker to handle the preemption interrupt `--sig-proxy=false`
+## Usage
 
-## Datasets
+### The bachfile
+
+Applications are defined using a 'bachfile', this specifies the location of the binary file to be run in the computation. It also contains a definition of the hardware requirements for each slave node.
+
+### Map Reduce
+
+This use case supports a basic map and collect phase reading from any HTTP storage supporting the 'range' header. Documentation is available [here](/examples/reduce/REDUCE.md).
+
+### Stream Processing
+
+Documentation is available [here](/examples/stream/STREAM.md).
+
+
+## Interesting Datasets
 
 Good source of datasets:
 https://registry.opendata.aws/
