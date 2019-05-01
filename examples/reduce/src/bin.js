@@ -9,9 +9,7 @@ process.stdin.on("readable", () => {
 		// console.log(JSON.parse(units[0]))
 		remainder = units.splice(-1, 1)[0]; // if it doesn't contain a final delimiter, keep the last chunk
 
-		units.forEach(unit => {
-			counter++;
-		});
+		counter += units.length;
 
 	}
 });

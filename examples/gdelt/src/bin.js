@@ -592,7 +592,7 @@ process.stdin.on("readable", () => {
 					acc[EVENTDESCRIPTION]++;
 				}
 
-				console.log(NumEvents)
+				console.log(NumEvents);
 			}
 			catch (e) {
 				console.log(unit);
