@@ -10,6 +10,7 @@ module.exports = ({
 
 		constructor({ bachfile, nTasks, target, callbackAddress, callbackPort = 9001 } = {}) {
 			this.debug = debug("master");
+			console.time("timeToComplete");
 
 			this.bachfile = bachfile;
 			this.callbackPort = callbackPort;
@@ -68,6 +69,7 @@ module.exports = ({
 			if (this.nComplete === this.tasks.length) {
 				// console.log(Buffer.concat(this.buffers).toString());
 				this.debug("all tasks complete");
+				console.timeEnd("timeToComplete");
 				this.cleanUpResources();
 			}
 		}
