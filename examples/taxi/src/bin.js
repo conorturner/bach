@@ -48,6 +48,6 @@ process.stdin.on("readable", () => {
 
 process.stdin.on("end", () => {
 	// console.log(JSON.stringify(acc, null, 2));
-	// console.log(Object.keys(acc).length);
+	console.log(Object.keys(acc).length);
 	process.exit(0);
 });

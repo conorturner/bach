@@ -22,12 +22,21 @@ class StreamCluster extends Writable {
 		this.loadBalancers = this.spawnWorkers(nWorkers);
 		this.nSockets = 0;
 		this.remainder = Buffer.alloc(0);
+		this.bytes = 0;
+
+		this.startMonitoring();
+	}
+
+	startMonitoring() {
+		let previous = this.bytes;
 
 		setInterval(() => {
 			const desiredSize = 65536;
 			const diff = this._writableState.length - desiredSize;
-			console.error(diff);
-		}, 500);
+
+			console.error(this.bytes - previous);
+			previous = this.bytes;
+		}, 1000);
 	}
 
 	setDesiredConcurrency(desiredNodes) {
@@ -50,6 +59,7 @@ class StreamCluster extends Writable {
 	}
 
 	_write(chunk, encoding, callback) { // chunks are sections binary streams of tuples
+		this.bytes += chunk.length;
 		this.awaitWritableLoadBalancer()
 			.then((worker) => {
 				this.writeChunk({ worker, chunk, encoding, callback });
