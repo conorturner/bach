@@ -13,7 +13,7 @@ class ComputeEngine {
 		const flags = [
 			"--preemptible",
 			"--zone europe-west1-b",
-			"--image node11-vm-image", //TODO: rebuild node11-vm-image as a more lightweight image with lower permissions
+			"--image node11-vm-image-v2", //TODO: rebuild node11-vm-image as a more lightweight image with lower permissions
 			`--custom-cpu ${bachfile.hardware.cpu}`,
 			`--custom-memory ${bachfile.hardware.memory}MB`,
 			"--format json",
