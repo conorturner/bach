@@ -7,7 +7,7 @@
   ],
   "delimiter": "\n",
   "hardware": {
-    "cpu": 1,
+    "cpu": 2,
     "memory": 2048
   }
 }
