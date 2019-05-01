@@ -6,7 +6,7 @@ class ComputeEngine {
 
 	createInstances({ names, env, bachfile }) {
 		const envString = `${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
-		const codeUri = "cd /home/conorscturner/bach/deployments/docker"; // TODO: this is the uri of the bach runtime code in the VM (it is now nested under slave)
+		const codeUri = "cd /home/conorscturner/bach/deployments/slave";
 		const startupScript = `#! /bin/bash \n\n ${codeUri} \n ${envString} node index > /home/conorscturner/std.log 2> /home/conorscturner/err.log &`;
 		const shutdownScript = "#! /bin/bash \n\n sudo kill -s SIGINT \\$(ps aux | grep 'node index' | grep -v grep | awk '{print \\$2}')"; // TODO: this needs to work for other binaries than node
 
