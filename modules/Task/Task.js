@@ -29,7 +29,8 @@ module.exports = ({
 					const { hardware } = this.bachfile;
 					const { cpu, memory } = hardware;
 
-					this.debug("starting docker container");
+					// this.debug("starting docker container");
+					console.time(`startingTask:${this.uuid}`);
 					return Docker.run({
 						tag: `bach-${ this.bachfile["logical-name"] }:latest`,
 						cpu,
@@ -39,7 +40,8 @@ module.exports = ({
 						entryArgs: [".docker-wrapper.js"]
 					})
 						.then(result => {
-							this.debug("docker container started");
+							console.timeEnd(`startingTask:${this.uuid}`);
+							// this.debug("docker container started");
 							return result;
 						});
 				}

@@ -1,6 +1,5 @@
 {
   "logical-name": "gdelt",
-  "interruptible": true,
   "src": "./src",
   "binary": "node",
   "args": [
@@ -9,9 +8,6 @@
   "delimiter": "\n",
   "hardware": {
     "cpu": 1,
-    "memory": 2048,
-    "disk": "1g",
-    "graphics": null,
-    "network": null
+    "memory": 2048
   }
 }

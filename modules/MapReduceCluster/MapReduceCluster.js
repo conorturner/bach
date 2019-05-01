@@ -110,7 +110,6 @@ module.exports = ({
 			if (bytesRead === targetBytesRead) {
 				task.debug("task complete");
 				this.onTaskComplete();
-				// TODO: cleanup of resources used for the given task need to be cleared up here e.g. delete/stop vms
 			}
 			else {
 				task.debug(`preempted with ${targetBytesRead - bytesRead} bytes remaining`);

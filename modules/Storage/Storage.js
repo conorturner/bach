@@ -5,7 +5,7 @@ class Storage {
 
 		const promiseArray = new Array(n - 1).fill(null).map((_, i) => readFrom((i + 1) * goalTileSize));
 		return Promise.all(promiseArray)
-			.then(divisions => [0].concat(divisions))
+			.then(divisions => [0].concat(divisions)) // 0 is added to signify reading from start
 			.then(divisions => divisions.map((division, index) => {
 				if (divisions.length === 1) return { start: 0, end: size - 1 };
 				else if (index === 0) return { start: 0, end: divisions[index + 1] };

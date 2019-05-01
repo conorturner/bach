@@ -19,11 +19,11 @@ module.exports = ({ // Injectable dependencies
 		}
 
 		static runRemote({ tag, env, cpu, memory, remoteHost }) {
-			// TODO: pass in remote host e.g. http://strider.local:2375
+
 			const create = () => {
 				const options = {
 					method: "POST",
-					url: "http://strider.local:2375/v1.24/containers/create",
+					url: `http://${remoteHost}/v1.24/containers/create`,
 					body: {
 						Image: "conorturner/bach-slave",
 						Env: Object.keys(env).map(key => `${key}=${env[key]}`),
@@ -35,7 +35,7 @@ module.exports = ({ // Injectable dependencies
 							CpuQuota: 100000 * cpu,
 							CpuPeriod: 100000,
 							Memory: memory * 1e6,
-							MemorySwap: memory * 1e6
+							MemorySwap: -1
 						}
 					},
 					json: true
@@ -66,8 +66,14 @@ module.exports = ({ // Injectable dependencies
 			return create().then(start);
 		}
 
-		static run({ tag, env, cpu, memory, remoteHost }) {
-			if (remoteHost) return Docker.runRemote({ tag, env, cpu, memory, remoteHost });
+		static run({ tag, env, cpu, memory }) {
+			if (process.env.REMOTE_DOCKER_HOST) return Docker.runRemote({
+				tag,
+				env,
+				cpu,
+				memory,
+				remoteHost: process.env.REMOTE_DOCKER_HOST
+			});
 			else return Docker.runLocal({ env, cpu, memory });
 		}
 
