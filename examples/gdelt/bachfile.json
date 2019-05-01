@@ -8,6 +8,6 @@
   "delimiter": "\n",
   "hardware": {
     "cpu": 2,
-    "memory": 2048
+    "memory": 4096
   }
 }
