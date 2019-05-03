@@ -43,6 +43,7 @@ class StreamCluster extends Writable {
 	}
 
 	setDesiredConcurrency(desiredNodes) {
+		console.log("setDesiredConcurrency:", desiredNodes);
 		const set = () => {
 			if (desiredNodes - this.tasks.length > 0) { // add nodes
 				if (this.maxSlaves && desiredNodes > this.maxSlaves) desiredNodes = this.maxSlaves;
@@ -69,6 +70,11 @@ class StreamCluster extends Writable {
 
 	removeNode() {
 		const task = this.tasks.pop();
+		const { lbPid, uuid } = task;
+		const lb = this.getLoadBalancer({ pid: lbPid });
+		if (!lb) return; // cannot remove without load balancer
+
+		lb.process.send({ event: "close", taskId: uuid });
 		return task.delete();
 	}
 

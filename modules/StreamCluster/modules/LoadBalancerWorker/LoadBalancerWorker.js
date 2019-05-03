@@ -176,7 +176,6 @@ class LoadBalancerWorker extends Writable {
 		switch (message.event) {
 			case "close": {
 				const { taskId } = message;
-				this.debug(`closing upstream: ${taskId}`);
 				this.endUpstreamConnection({ taskId }); // end the upstream when master says its time
 				break;
 			}
@@ -191,6 +190,9 @@ class LoadBalancerWorker extends Writable {
 
 	endUpstreamConnection({ taskId }) {
 		const idx = this.upstreamConnections.findIndex(({ taskId: tid }) => tid === taskId);
+		if (!this.upstreamConnections[idx]) return; // is no longer connected
+		this.debug(`closing upstream: ${taskId}`);
+
 		const con = this.upstreamConnections[idx].res;
 		this.upstreamConnections.splice(idx, 1); // remove from array before ending to ensure no write after end errors
 		con.end();
