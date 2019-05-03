@@ -8,12 +8,12 @@ class ComputeEngine {
 		const envString = `${Object.keys(env).map(key => `${key}=${env[key]}`).join(" ")}`;
 		const codeUri = "cd /home/conorscturner/bach/deployments/slave";
 		const startupScript = `#! /bin/bash \n\n ${codeUri} \n ${envString} node index > /home/conorscturner/std.log 2> /home/conorscturner/err.log &`;
-		const shutdownScript = "#! /bin/bash \n\n sudo kill -s SIGINT \\$(ps aux | grep 'node index' | grep -v grep | awk '{print \\$2}')"; // TODO: this needs to work for other binaries than node
+		const shutdownScript = `#! /bin/bash \n\n sudo kill -s SIGINT \\$(ps aux | grep '${bachfile.binary} ${bachfile.args.join(" ")}' | grep -v grep | awk '{print \\$2}')`;
 
 		const flags = [
 			"--preemptible",
 			"--zone europe-west1-b",
-			"--image node11-vm-image-v2", //TODO: rebuild node11-vm-image as a more lightweight image with lower permissions
+			"--image node11-vm-image-v2",
 			`--custom-cpu ${bachfile.hardware.cpu}`,
 			`--custom-memory ${bachfile.hardware.memory}MB`,
 			"--format json",

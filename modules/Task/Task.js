@@ -24,6 +24,8 @@ module.exports = ({
 		}
 
 		run({ env }) { // TODO: add output stream
+			this.runningEnv = env;
+
 			switch (this.target) {
 				case "local": {
 					const { hardware } = this.bachfile;
@@ -32,7 +34,7 @@ module.exports = ({
 					// this.debug("starting docker container");
 					console.time(`startingTask:${this.uuid}`);
 					return Docker.run({
-						tag: `bach-${ this.bachfile["logical-name"] }:latest`,
+						tag: `bach-${this.bachfile["logical-name"]}:latest`,
 						cpu,
 						memory,
 						env,
@@ -47,7 +49,7 @@ module.exports = ({
 				}
 				case "gcf": {
 					return googleCloud.sendPubSubMessage({
-						name: `bach-${ this.bachfile["logical-name"] }-start-child`,
+						name: `bach-${this.bachfile["logical-name"]}-start-child`,
 						message: env
 					})
 						.catch(console.error);
@@ -80,7 +82,8 @@ module.exports = ({
 		}
 
 		delete() {
-			// other resources which require deletion can go here under a switch
+			if (this.runningEnv !== "gce") return;
+
 			const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
 			return computeEngine.deleteInstances({ names: [name] })
 				.catch(console.error);
@@ -88,7 +91,7 @@ module.exports = ({
 
 		static readBachfile(path) {
 			try {
-				return require(`${ path }/bachfile.json`);
+				return require(`${path}/bachfile.json`);
 
 			}
 			catch (e) {

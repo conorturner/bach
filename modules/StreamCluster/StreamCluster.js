@@ -7,7 +7,7 @@ const debug = require("debug");
 
 class StreamCluster extends Writable {
 
-	constructor({ target, bachfile, callbackAddress, nWorkers = os.cpus().length } = {}) {
+	constructor({ target, bachfile, callbackAddress, partition, nWorkers = os.cpus().length, max } = {}) {
 		super({ highWaterMark: 1024 * 100 });
 
 		this.debug = debug("master");
@@ -23,26 +23,35 @@ class StreamCluster extends Writable {
 		this.nSockets = 0;
 		this.remainder = Buffer.alloc(0);
 		this.bytes = 0;
+		this.maxSlaves = max;
 
-		this.startMonitoring();
+		if (partition) this.setDesiredConcurrency(partition);
+		else this.startMonitoring();
 	}
 
 	startMonitoring() {
-		let previous = this.bytes;
+		this.setDesiredConcurrency(1);
 
 		setInterval(() => {
-			const desiredSize = 65536;
+			const desiredSize = 65536, acceptableDelta = 1000;
 			const diff = this._writableState.length - desiredSize;
+			if (Math.abs(diff) < acceptableDelta) return; // we are in the sweet spot
 
-			console.error(this.bytes - previous);
-			previous = this.bytes;
+			if (diff < 0) this.setDesiredConcurrency(this.tasks.length - 1); // there is less than desired in the buffer
+			else this.setDesiredConcurrency(this.tasks.length + 1);  // there is more than desired in the buffer
 		}, 1000);
 	}
 
 	setDesiredConcurrency(desiredNodes) {
 		const set = () => {
-			const delta = desiredNodes - this.tasks;
-			if (delta > 0) for (let i = 0; i < delta; i++) this.addNode();
+			if (desiredNodes - this.tasks.length > 0) { // add nodes
+				if (this.maxSlaves && desiredNodes > this.maxSlaves) desiredNodes = this.maxSlaves;
+				for (let i = 0; i < desiredNodes - this.tasks.length; i++) this.addNode();
+			}
+			else { // remove nodes
+				if (desiredNodes < 1) desiredNodes = 1;
+				for (let i = 0; i < this.tasks.length - desiredNodes; i++) this.removeNode();
+			}
 		};
 
 		if (this.isListening) set();
@@ -56,6 +65,11 @@ class StreamCluster extends Writable {
 
 		task.run({ bachfile, env }).catch(err => console.error(err));
 		this.tasks.push(task);
+	}
+
+	removeNode() {
+		const task = this.tasks.pop();
+		return task.delete();
 	}
 
 	_write(chunk, encoding, callback) { // chunks are sections binary streams of tuples
@@ -125,6 +139,8 @@ class StreamCluster extends Writable {
 			case "downStreamRequest": {
 				const { pid, taskId } = message;
 				const task = this.getTask({ taskId });
+				if (!task) return;
+
 				task.debug(`downStreamRequest lb=${pid}`);
 				// mark task as running - also maybe mark the pid owning the request
 				break;
@@ -132,6 +148,8 @@ class StreamCluster extends Writable {
 			case "downStreamRequestEnd": {
 				const { pid, taskId } = message;
 				const task = this.getTask({ taskId });
+				if (!task) return;
+
 				task.debug(`downStreamRequestEnd lb=${pid}`);
 				// restart task
 				const env = { CALLBACK_ENDPOINT: `http://${this.callbackAddress}:${this.callbackPort}/${task.uuid}` };
@@ -142,6 +160,8 @@ class StreamCluster extends Writable {
 			case "upStreamRequest": {
 				const { pid, taskId } = message;
 				const task = this.getTask({ taskId });
+				if (!task) return;
+
 				task.lbPid = pid; // used later when messaging LB to close upstream connection
 				task.debug(`upStreamRequest lb=${pid}`);
 
@@ -151,12 +171,16 @@ class StreamCluster extends Writable {
 			case "upStreamRequestEnd": {
 				const { pid, taskId } = message;
 				const task = this.getTask({ taskId });
+				if (!task) return;
+
 				task.debug(`upStreamRequestEnd lb=${pid}`);
 				break;
 			}
 			case "close": {
 				const { pid, taskId } = message;
 				const task = this.getTask({ taskId });
+				if (!task) return;
+
 				const lb = this.getLoadBalancer({ pid });
 
 				task.debug(`close request lb=${pid} downStreamLbPid=${task.lbPid}`);
@@ -166,12 +190,15 @@ class StreamCluster extends Writable {
 			case "config": {
 				const { pid, taskId } = message;
 				const task = this.getTask({ taskId });
+				if (!task) return;
+
 				task.debug(`config request lb=${pid}`);
 				break;
 			}
 			case "heartbeat": {
 				const { pid, taskId, cpu, mem } = message;
 				const task = this.getTask({ taskId });
+
 				if (!task) return; // if anything lingers
 				task.debug(`cpu=${cpu}% mem=${mem}% lb-pid=${pid}`);
 				break;

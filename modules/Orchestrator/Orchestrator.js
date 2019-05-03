@@ -25,9 +25,8 @@ class Orchestrator {
 		return mapReduceCluster.run({ dataUri });
 	}
 
-	static runStreamCluster(bachfile, { inputStream, partition, target, ip, lb }) {
-		const streamCluster = new StreamCluster({ target, bachfile, callbackAddress: ip, nWorkers: lb });
-		streamCluster.setDesiredConcurrency(partition); // TODO: if partition is set to 'auto' - scale partitions up and down based on input buffer length/some other constraint
+	static runStreamCluster(bachfile, { inputStream, partition, target, ip, lb, max }) {
+		const streamCluster = new StreamCluster({ partition, target, bachfile, callbackAddress: ip, nWorkers: lb, max });
 		inputStream.pipe(streamCluster);
 
 		return Promise.resolve();

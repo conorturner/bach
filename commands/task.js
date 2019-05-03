@@ -10,11 +10,12 @@ program
 	.option("-t, --target <target>", "Specify target")
 	.option("-d, --data <data>", "Specify data source")
 	.option("-p, --partition <partition>", "How many partitions/shards should be used")
+	.option("-m, --max <max>", "Max partitions/shards that should be used")
 	.option("--ip <ip>", "host ip")
 	.option("--lb <lb>", "number of load balancer processes")
 	.option("-s, --scan", "should the range of resources be scanned")
 	.action((cmd) => {
-		const { target = "local", partition = "1", ip, lb } = cmd;
+		const { target = "local", partition, ip, lb, max } = cmd;
 		const path = process.cwd();
 		const bachfile = Task.readBachfile(path);
 		if (!bachfile) return console.error("Unable to find bachfile:", `${path}/bachfile.json`);
@@ -28,9 +29,10 @@ program
 		const options = {
 			type,
 			target,
-			partition: parseInt(partition, 10),
+			partition: partition ? parseInt(partition, 10) : null,
 			ip,
-			lb: lb ? parseInt(lb, 10) : null
+			lb: lb ? parseInt(lb, 10) : null,
+			max
 		};
 
 		if (cmd.data && !process.stdin.isTTY) return console.log("Cannot specify both data and pipe input");

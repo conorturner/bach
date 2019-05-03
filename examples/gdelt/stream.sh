@@ -2,5 +2,5 @@
 
 HOST_IP=$(ifconfig | grep 'inet \(192..........\)' -o |  grep '192..........' -o)
 echo 'master ip:' ${HOST_IP}
-#cat GDELT1MIL.dat | node throttle.js 100 | bach task-run --ip ${HOST_IP} -p 1 > out
-cat GDELT.dat | bach task-run --ip ${HOST_IP} -p 2 > out
+cat GDELT.dat | node throttle.js 50 | bach task-run --ip ${HOST_IP} -m 4 > out
+#cat GDELT.dat | bach task-run --ip ${HOST_IP} -m 2 > out
