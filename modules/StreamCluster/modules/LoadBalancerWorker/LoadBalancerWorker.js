@@ -12,6 +12,7 @@ class LoadBalancerWorker extends Writable {
 		this.debug = debug(`lb:${process.pid}`);
 		this.roundRobin = 0;
 		this.upstreamConnections = [];
+		this.endedTaks = [];
 		this.server = http.createServer();
 
 		this.server.on("request", (req, res) => {
@@ -160,8 +161,10 @@ class LoadBalancerWorker extends Writable {
 	}
 
 	handleHeartbeatRequest(req, res) {
-		res.end();
 		const taskId = LoadBalancerWorker.getTaskId(req.url);
+		if (this.endedTaks.includes(taskId)) return res.status(500).send();
+		else res.end();
+
 		const { cpu, mem } = req.headers;
 		process.send({ event: "heartbeat", pid: process.pid, taskId, cpu, mem });
 	}
@@ -192,6 +195,7 @@ class LoadBalancerWorker extends Writable {
 		const idx = this.upstreamConnections.findIndex(({ taskId: tid }) => tid === taskId);
 		if (!this.upstreamConnections[idx]) return; // is no longer connected
 		this.debug(`closing upstream: ${taskId}`);
+		this.endedTaks.push(taskId);
 
 		const con = this.upstreamConnections[idx].res;
 		this.upstreamConnections.splice(idx, 1); // remove from array before ending to ensure no write after end errors
