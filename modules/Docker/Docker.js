@@ -1,35 +1,83 @@
-class Docker {
+/* eslint-disable indent */
 
-	constructor({ childProcess = require("child_process") } = {}) {
-		this.childProcess = childProcess;
-	}
+module.exports = ({ // Injectable dependencies
+					  request = require("request-promise-native"),
+					  childProcess = require("child_process"),
+				  } = {}) => {
 
-	run({ tag, env, inputStream, cpu }) {
-		const envArgs = Object.keys(env).map(key => `-e ${key}=${JSON.stringify(env[key])}`).join(" ");
+	class Docker {
 
-		return new Promise((resolve) => {
-			const args = ["run", envArgs, "-i", `--cpu-quota=${cpu.min * 100000}`, tag];
-			const options = { stdio: ["pipe", process.stdout, process.stderr] };
-			const child = this.childProcess.spawn("docker", args, options);
+		static runLocal({ env, cpu, memory }) {
+			const envArgs = Object.keys(env).map(key => `-e ${key}=${JSON.stringify(env[key])}`).join(" ");
 
-			inputStream.pipe(child.stdin);
+			const cmd = `docker run ${envArgs} -d --cpu-quota=${cpu * 100000} --memory ${memory}m conorturner/bach-slave`;
 
-			child.on("close", (code) => {
-				// console.log(`child process exited with code ${code}`);
-				resolve(code);
+			return new Promise((resolve, reject) => {
+				childProcess.exec(cmd, (error, stdout, stderr) =>
+					error ? reject(error) : resolve({ stdout, stderr }));
 			});
-		});
+		}
+
+		static runRemote({ tag, env, cpu, memory, remoteHost }) {
+
+			const create = () => {
+				const options = {
+					method: "POST",
+					url: `http://${remoteHost}/v1.24/containers/create`,
+					body: {
+						Image: "conorturner/bach-slave",
+						Env: Object.keys(env).map(key => `${key}=${env[key]}`),
+						// name: tag,
+						AttachStdout: true,
+						AttachStdin: true,
+						AttachStderr: true,
+						HostConfig: {
+							CpuQuota: 100000 * cpu,
+							CpuPeriod: 100000,
+							Memory: memory * 1e6,
+							MemorySwap: -1
+						}
+					},
+					json: true
+				};
+
+				return request(options)
+					.catch(error => {
+						if (error.statusCode === 404) {
+							console.error("Slave docker image not pulled on host.");
+							process.exit(1);
+						}
+						return Promise.reject(error);
+					});
+			};
+
+			const start = ({ Id, Warnings }) => {
+				if (Warnings) return Promise.reject(Warnings);
+				// console.log("started:", Id);
+
+				const options = {
+					method: "POST",
+					url: `http://strider.local:2375/v1.24/containers/${Id}/start`
+				};
+
+				return request(options);
+			};
+
+			return create().then(start);
+		}
+
+		static run({ tag, env, cpu, memory }) {
+			if (process.env.REMOTE_DOCKER_HOST) return Docker.runRemote({
+				tag,
+				env,
+				cpu,
+				memory,
+				remoteHost: process.env.REMOTE_DOCKER_HOST
+			});
+			else return Docker.runLocal({ env, cpu, memory });
+		}
+
 	}
 
-	build({ tag, file, workdir }) {
-		const cmd = `docker build -f ${workdir}/${file} -t ${tag} ${workdir}`;
-
-		return new Promise((resolve, reject) => {
-			this.childProcess.exec(cmd, (error, stdout, stderr) =>
-				error ? reject(error) : resolve({ stdout, stderr }));
-		});
-	}
-
-}
-
-module.exports = Docker;
+	return Docker;
+};

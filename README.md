@@ -1,128 +1,50 @@
 # Bach
-Orchestrate a vendor agnostic cloud.
 
-## Task Definitions
+Orchestrate a cluster of preemptible virtual machines on google compute engine.
 
-#### Run a task that will run until completion and can tolerate being interrupted.
-```json
-{
-    "logical-name": "cache-refiller",
-    "type":"task",
-    "interruptible": true,
-    "runtime": "docker",
-    "hardware": {
-        "cpu": {
-            "min": 1,
-            "max": null
-        },
-        "memory": {
-            "min": 128,
-            "max": null
-        },
-        "disk": {
-            "min": "1g"
-        },
-        "graphics": null,
-        "network": null
-    }
-}
+## Prerequisites
+
+- Node.js
+  - Installing node and npm
+  - Running as a command line tool
+- Docker
+  - Setting up docker to run on local machine
+  - Setting up a docker host on a local subnet
+- Google Cloud CLI
+  - Get started with Google Cloud
+- Slave docker/vm image
+
+## Installation
+
+### Install via npm
+```bash
+npm i <tbc> -g
+```
+### Install from source
+Linking will allow changes made to thee source code to be immediately reflected in the tool.
+```bash
+git clone https://github.com/conorturner/bach.git && \
+cd bach && \
+npm link
 ```
 
-#### Run a task which can be tiled
-- This would be 128mb of memory per tile, tuning process may reveal that at higher tile counts this can be reduced.
-- Tiled processing can be more easily scheduled making more efficient use of resources.
-- Tiles will be split at roughly even byte ranges then count forward beginning processing at the next delimiter found.
-- Tile count can be easily modulated providing a good range of variables for testing.
-- Rows of data could be organised as one object per line in the json example, hence the `\n` delimiter.
-- null delimiter would result in data being split at the byte level before being fed into the processor.
 
-*JSON Search*
-```json
-{
-    "logical-name": "json-searcher",
-    "type": "mapper",
-    "interruptible": true,
-    "runtime": "nodejs10",
-    "tile": {
-        "min": 4,
-        "max": 10,
-        "delimiter": "\n"
-    },
-    "hardware": {
-        "cpu": {
-            "min": 1,
-            "max": null
-        },
-        "memory": {
-            "min": 128,
-            "max": null
-        },
-        "disk": {
-            "min": "1g"
-        },
-        "graphics": null,
-        "network": null
-    }
-}
-```
+## Usage
 
-*Free Text Search*
-```json
-{
-    "logical-name": "text-searcher",
-    "type": "mapper",
-    "interruptible": true,
-    "runtime": "java10",
-    "tile": {
-        "min": 4,
-        "max": 10,
-        "delimiter": null
-    },
-    "hardware": {
-        "cpu": {
-            "min": 0.5,
-            "max": null
-        },
-        "memory": {
-            "min": 128,
-            "max": null
-        },
-        "disk": {
-            "min": "1g"
-        },
-        "graphics": null,
-        "network": null
-    }
-}
-```
+### The bachfile
 
-## Program interface
+Applications are defined using a 'bachfile', this specifies the location of the binary file to be run in the computation. It also contains a definition of the hardware requirements for each slave node.
 
-- Data will be streamed into the program and the output of its mapping operation will be streamed to stdout.
-- Data sent to stderr will cause abnormal termination (ability to turn this off).
-- If a mapper type task is interrupted it will be restarted from start of the current chunk, meaning outputs must be push to stdout only when a chunk is complete, external state could be maintained.
+### Map Reduce
 
-## Co-location of data
+This use case supports a basic map and collect phase reading from any HTTP storage supporting the 'range' header. Documentation is available [here](/examples/reduce/REDUCE.md).
 
-- To allow for the most stateless operation data storage should consist of page per gb abstract storage.
-- Data can be pre-tiled before upload to allow for easy chunking.
+### Stream Processing
 
-## Event driven architecture
-1. `$ bach task run`
-2. Check if topics/cloud storage are created
-    a. If not, create them and upload dataset (if local uri)
-    b. If dataset exists in cloud check hash file(s) for freshness, if need be reupload.
-    c. create build/input/output/report storage buckets
-    d. if dataset is distributed simply stream directly from remote servers.
-4. On upload to code storage an event triggers execution of code and simultaneously triggers a execution.json file in the report folder.
-    a. if abstract runtime e.g. nodejs, java, exe. Send code uri to            function and download code and execute in nodevm etc.
-    b. if docker image run with sdtin as a pipe from the relevant          command line command e.g. `$ bach storage get $LOGICAL_ID`
-5. Run program and pipe outputs into output bucket which will trigger an event placing a report.json file in a report storage.
-6. If the program is interrupted it will create a interrupt.json which will trigger an event which will restart the program based on the interrupt report.
-7. `$ bach task report`
-8. Check report.json files against execution.json file to determine the state of the system. Report as necessary.
+Documentation is available [here](/examples/stream/STREAM.md).
 
-## Datasets
+
+## Interesting Datasets
 
 Good source of datasets:
 https://registry.opendata.aws/
@@ -136,7 +58,12 @@ https://registry.opendata.aws/commoncrawl/
 
 _Nexrad weather satellite data_
 https://docs.opendata.aws/noaa-nexrad/readme.html
+Data can be searched byprefix as shown below
+https://noaa-nexrad-level2.s3.amazonaws.com/?prefix=2019/01/19
 
 _Database of a subset of all 'events' that occur on this earth._ Scraped from the internet I assume.
 https://www.gdeltproject.org/#intro
 Smaller 1.1gb version of the dataset http://data.gdeltproject.org/events/GDELT.MASTERREDUCEDV2.1979-2013.zip
+
+Headers for 30gb taxi dataset
+http://www.debs2015.org/call-grand-challenge.html

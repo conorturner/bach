@@ -1,0 +1,13 @@
+{
+  "logical-name": "reduce",
+  "src": "./src",
+  "binary": "node",
+  "args": [
+    "./src/bin.js"
+  ],
+  "delimiter": "\n",
+  "hardware": {
+    "cpu": 2,
+    "memory": 8192
+  }
+}

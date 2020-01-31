@@ -1,61 +1,105 @@
-const Docker = require("../Docker/Docker");
-const NodeBuilder = require("../TaskBuilders/NodeBuilder/NodeBuilder");
+module.exports = ({
+					  Docker = require("../Docker/Docker")(),
+					  GoogleCloud = require("../GoogleCloud/GoogleCloud"),
+					  ComputeEngine = require("../ComputeEngine/ComputeEngine"),
+					  childProcess = require("child_process"),
+					  uuidv4 = require("uuid/v4"),
+					  debug = require("debug")
+				  } = {}) => {
 
-class Task {
+	const googleCloud = new GoogleCloud();
+	const computeEngine = new ComputeEngine();
 
-	constructor({ docker = new Docker(), childProcess = require("child_process") } = {}) {
-		this.docker = docker;
-		this.childProcess = childProcess;
-	}
+	class Task {
 
-	build(path) {
-		const bachfile = this.readBachfile(path);
-		if (!path) return Promise.resolve();
+		constructor({ bachfile, target, uuid = uuidv4() }) {
+			if (!bachfile) throw new Error("'bachfile' must be passed into constructor.");
+			if (!target) throw new Error("'target' of task must be provided.");
 
-		// Clean build folder.
-		this.childProcess.execSync(`rm -rf ${path}/build`);
-		this.childProcess.execSync(`mkdir ${path}/build`);
+			this.bachfile = bachfile;
+			this.target = target;
+			this.uuid = uuid;
+			this.debug = debug(`task:${uuid}`);
+			this.hasInstance = false; // this is for cloud deployments requiring instance creation
+		}
 
-		switch (bachfile.runtime) {
-			case "nodejs11": {
-				const nodeBuilder = new NodeBuilder({ path });
-				return nodeBuilder.build(bachfile);
-			}
-			default: {
-				console.error("unknown runtime");
+		run({ env }) { // TODO: add output stream
+			this.runningEnv = env;
 
-				break;
+			switch (this.target) {
+				case "local": {
+					const { hardware } = this.bachfile;
+					const { cpu, memory } = hardware;
+
+					// this.debug("starting docker container");
+					console.time(`startingTask:${this.uuid}`);
+					return Docker.run({
+						tag: `bach-${this.bachfile["logical-name"]}:latest`,
+						cpu,
+						memory,
+						env,
+						entry: "node",
+						entryArgs: [".docker-wrapper.js"]
+					})
+						.then(result => {
+							console.timeEnd(`startingTask:${this.uuid}`);
+							// this.debug("docker container started");
+							return result;
+						});
+				}
+				case "gcf": {
+					return googleCloud.sendPubSubMessage({
+						name: `bach-${this.bachfile["logical-name"]}-start-child`,
+						message: env
+					})
+						.catch(console.error);
+				}
+				case "gce": {
+					const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
+					if (!this.hasInstance) {
+						this.hasInstance = true;
+						this.debug("creating virtual machine");
+						return computeEngine.createInstances({ names: [name], env, bachfile: this.bachfile })
+							.then((result) => {
+								this.debug("virtual machine created");
+								return result;
+							});
+					}
+
+					this.debug("starting virtual machine");
+					return computeEngine.startInstances({ names: [name] })
+						.then(result => {
+							this.debug("virtual machine started");
+							return result;
+						})
+						.catch(console.error);
+				}
+
+				default: {
+					throw new Error("Unknown runtime target");
+				}
 			}
 		}
-	}
 
-	run({ bachfile, target = "local", inputStream }) {
-		switch (target) {
-			case "local": {
-				return this.docker.run({
-					tag: bachfile["logical-name"],
-					cpu: bachfile.hardware.cpu,
-					env: { TILE_NUM: 5 },
-					inputStream
-				});
+		delete() {
+			if (this.runningEnv !== "gce") return;
+
+			const name = `${this.bachfile["logical-name"]}-${this.uuid}`;
+			return computeEngine.deleteInstances({ names: [name] })
+				.catch(console.error);
+		}
+
+		static readBachfile(path) {
+			try {
+				return require(`${path}/bachfile.json`);
+
 			}
-
-			default: {
-				throw new Error("Unknown runtime target");
+			catch (e) {
+				return null;
 			}
 		}
+
 	}
 
-	readBachfile(path) {
-		try {
-			return JSON.parse(this.childProcess.execSync(`cat ${path}/bachfile.json`));
-
-		}
-		catch (e) {
-			console.error("error getting bachfile", e);
-		}
-	}
-
-}
-
-module.exports = Task;
+	return Task;
+};
