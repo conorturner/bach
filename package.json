@@ -43,7 +43,7 @@
   "devDependencies": {
     "eslint": "^5.12.1",
     "eslint-config-u": "0.0.4",
-    "jest": "23.5.0"
+    "jest": "29.3.1"
   },
   "eslintConfig": {
     "extends": "u"
